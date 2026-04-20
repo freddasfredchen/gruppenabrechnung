@@ -43,7 +43,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
     if (!newName.trim() || !newPw.trim() || !newAdminPw.trim() || newMembers.length < 2) return;
     setCreating(true);
     const [pwHash, adminHash] = await Promise.all([sha256(newPw), sha256(newAdminPw)]);
-    onCreateGroup({ id: Date.now() + "", name: newName.trim(), icon: newIcon, color: newColor, pwHash, adminHash, members: newMembers, expenses: [], payments: [] });
+    onCreateGroup({ id: Date.now() + "", name: newName.trim(), icon: newIcon, color: newColor, pwHash, adminHash, members: newMembers, expenses: [], payments: [], creatorId: currentUser.id });
     setNewName(""); setNewPw(""); setNewAdminPw(""); setNewIcon("♟"); setNewColor(GROUP_COLORS[0]); setNewMembers([]); setShowCreate(false); setCreating(false);
   };
 

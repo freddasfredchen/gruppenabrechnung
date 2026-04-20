@@ -4,6 +4,59 @@ import { computeBalances, computeTransactions } from "../logic";
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
 import ManualPayment from "./ManualPayment";
 
+function MitgliederView({ g, allUsers, currentUser, isAdmin, getName, save, BRAND, BRAND_LT }) {
+  const [adding, setAdding] = useState(false);
+  const [selected, setSelected] = useState([]);
+  const canManage = currentUser.id === g.creatorId || isAdmin;
+  const available = allUsers.filter(u => !g.members.includes(u.id));
+
+  const addMembers = () => {
+    if (selected.length === 0) return;
+    save(ng => { ng.members = [...ng.members, ...selected]; });
+    setSelected([]); setAdding(false);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "grid", gap: 10, marginBottom: "1rem" }}>
+        {g.members.map(uid => { const name = getName(uid); return (
+          <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", border: `1px solid ${BRAND}15`, borderRadius: 12 }}>
+            <Avatar name={name} />
+            <span style={{ flex: 1, fontWeight: 600, fontSize: 15, color: "var(--color-text-primary)" }}>{name}</span>
+            {uid === g.creatorId && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: `${BRAND}15`, color: BRAND }}>ERSTELLER</span>}
+            {isAdmin && uid !== g.creatorId && (
+              <button onClick={() => save(ng => { ng.members = ng.members.filter(m => m !== uid); })} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 18, lineHeight: 1, fontWeight: 700, padding: "0 2px" }}>×</button>
+            )}
+          </div>
+        ); })}
+      </div>
+      {canManage && available.length > 0 && (
+        <>
+          <button onClick={() => setAdding(v => !v)} style={{ marginBottom: "1rem", padding: "8px 18px", borderRadius: 9, border: `1.5px solid ${BRAND}`, background: adding ? `${BRAND}10` : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+            {adding ? "Abbrechen" : "+ Mitglied hinzufügen"}
+          </button>
+          {adding && (
+            <Card style={{ padding: "1rem", marginBottom: "1rem" }}>
+              <div style={{ display: "grid", gap: 12 }}>
+                <SectionLabel>Mitglied auswählen</SectionLabel>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {available.map(u => (
+                    <ToggleBtn key={u.id} active={selected.includes(u.id)} onClick={() => setSelected(s => s.includes(u.id) ? s.filter(x => x !== u.id) : [...s, u.id])}>
+                      {u.name}
+                    </ToggleBtn>
+                  ))}
+                </div>
+                <PrimaryBtn onClick={addMembers} disabled={selected.length === 0} full>Hinzufügen</PrimaryBtn>
+              </div>
+            </Card>
+          )}
+        </>
+      )}
+      {canManage && available.length === 0 && <p style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Alle bekannten Nutzer sind bereits Mitglied.</p>}
+    </div>
+  );
+}
+
 export default function GroupDetail({ group, allUsers, onUpdate, onBack, currentUser }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -176,15 +229,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
         )}
 
         {view === "mitglieder" && (
-          <div>
-            <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: "1rem" }}>Mitglieder werden beim Erstellen der Gruppe festgelegt.</p>
-            {g.members.map(uid => { const name = getName(uid); return (
-              <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", border: `1px solid ${BRAND}15`, borderRadius: 12, marginBottom: 10 }}>
-                <Avatar name={name} />
-                <span style={{ flex: 1, fontWeight: 600, fontSize: 15, color: "var(--color-text-primary)" }}>{name}</span>
-              </div>
-            ); })}
-          </div>
+          <MitgliederView g={g} allUsers={allUsers} currentUser={currentUser} isAdmin={isAdmin} getName={getName} save={save} BRAND={BRAND} BRAND_LT={BRAND_LT} />
         )}
       </div>
     </div>
