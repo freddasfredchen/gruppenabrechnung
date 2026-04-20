@@ -1,0 +1,22 @@
+export const SK_SESSION = "vapp_session";
+
+export const APP_PW_HASH   = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b";
+export const LIST_ADM_HASH = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b";
+export const VORSTAND_HASH = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b";
+
+export const BRAND         = "#3D1A24";
+export const BRAND_LT      = "#6B2D3E";
+export const SILVER        = "#B0AEA8";
+export const COLORS_AVATAR = ["#7F77DD","#1D9E75","#D85A30","#378ADD","#D4537E","#BA7517","#639922","#E24B4A"];
+export const GROUP_ICONS   = ["♟","⚽","🎲","🍕","✈️","🎮","🏋️","🎵","🎯","💼"];
+export const GROUP_COLORS  = [BRAND, BRAND_LT, "#1D6B8C","#1D9E75","#7F77DD","#BA7517"];
+
+export const VORSTAND_USER = { id:"vorstand", name:"Vorstand", pwHash: VORSTAND_HASH, isVorstand: true };
+
+export async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+export function initials(name) { return name.trim().split(" ").map(w=>w[0]?.toUpperCase()||"").join("").slice(0,2)||"?"; }
+export function fmt(n) { return n.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"; }
+export function avatarColor(name) { return COLORS_AVATAR[name.charCodeAt(0)%COLORS_AVATAR.length]; }
