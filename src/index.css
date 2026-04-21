@@ -1,5 +1,14 @@
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --brand: #3D1A24;
+  --brand-lt: #6B2D3E;
+  --brand-a08: rgba(61,26,36,0.03);
+  --brand-a10: rgba(61,26,36,0.06);
+  --brand-a15: rgba(61,26,36,0.08);
+  --brand-a18: rgba(61,26,36,0.09);
+  --brand-a1a: rgba(61,26,36,0.10);
+  --brand-a22: rgba(61,26,36,0.13);
+  --brand-a33: rgba(61,26,36,0.20);
   --color-background-primary: #ffffff;
   --color-background-secondary: #f5f5f5;
   --color-background-tertiary: #e0e0e0;
@@ -14,13 +23,25 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --brand: #D44E6A;
+    --brand-lt: #E26080;
+    --brand-a08: rgba(212,78,106,0.06);
+    --brand-a10: rgba(212,78,106,0.10);
+    --brand-a15: rgba(212,78,106,0.13);
+    --brand-a18: rgba(212,78,106,0.15);
+    --brand-a1a: rgba(212,78,106,0.15);
+    --brand-a22: rgba(212,78,106,0.18);
+    --brand-a33: rgba(212,78,106,0.25);
     --color-background-primary: #1a1a1a;
     --color-background-secondary: #2a2a2a;
     --color-background-tertiary: #3a3a3a;
     --color-text-primary: #f0f0f0;
     --color-text-secondary: #a0a0a0;
     --color-text-tertiary: #707070;
+    --color-text-danger: #ef5350;
+    --color-text-success: #66bb6a;
     --color-border-secondary: #444444;
+    --color-border-danger: #ef5350;
   }
 }
 

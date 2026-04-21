@@ -39,6 +39,14 @@ export default function App() {
   const login = user => { sessionStorage.setItem(SK_SESSION, JSON.stringify(user)); setCurrentUser(user); };
   const logout = () => { sessionStorage.removeItem(SK_SESSION); setCurrentUser(null); };
 
+  const handleUpdateUserPw = async (userId, newPwHash) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    const updated = { ...user, pwHash: newPwHash };
+    await setDoc(doc(db, "users", userId), updated);
+    login(updated);
+  };
+
   if (!appAuthed) return <AppLoginScreen onSuccess={() => { sessionStorage.setItem("vapp_appauth", "1"); setAppAuthed(true); }} />;
   if (!loaded) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-sans)", color: "var(--color-text-secondary)" }}>Lade...</div>;
   if (!currentUser) return <UserLoginScreen users={users} onLogin={login} />;
@@ -47,5 +55,5 @@ export default function App() {
     const current = groups.find(g => g.id === activeGroup.id) || activeGroup;
     return <GroupDetail group={current} allUsers={allUsers} onUpdate={ng => setDoc(doc(db, "groups", ng.id), ng)} onBack={() => setActiveGroup(null)} currentUser={currentUser} />;
   }
-  return <GroupList groups={groups} users={users} currentUser={currentUser} onEnter={setActiveGroup} onCreateGroup={handleCreate} onDeleteGroup={handleDelete} onLogout={logout} />;
+  return <GroupList groups={groups} users={users} currentUser={currentUser} onEnter={setActiveGroup} onCreateGroup={handleCreate} onDeleteGroup={handleDelete} onLogout={logout} onUpdateUserPw={handleUpdateUserPw} />;
 }

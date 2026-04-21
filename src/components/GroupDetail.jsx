@@ -20,10 +20,10 @@ function MitgliederView({ g, allUsers, currentUser, isAdmin, getName, save, BRAN
     <div>
       <div style={{ display: "grid", gap: 10, marginBottom: "1rem" }}>
         {g.members.map(uid => { const name = getName(uid); return (
-          <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", border: `1px solid ${BRAND}15`, borderRadius: 12 }}>
+          <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", border: "1px solid var(--brand-a15)", borderRadius: 12 }}>
             <Avatar name={name} />
             <span style={{ flex: 1, fontWeight: 600, fontSize: 15, color: "var(--color-text-primary)" }}>{name}</span>
-            {uid === g.creatorId && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: `${BRAND}15`, color: BRAND }}>ERSTELLER</span>}
+            {uid === g.creatorId && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "var(--brand-a15)", color: BRAND }}>ERSTELLER</span>}
             {isAdmin && uid !== g.creatorId && (
               <button onClick={() => save(ng => { ng.members = ng.members.filter(m => m !== uid); })} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 18, lineHeight: 1, fontWeight: 700, padding: "0 2px" }}>×</button>
             )}
@@ -32,7 +32,7 @@ function MitgliederView({ g, allUsers, currentUser, isAdmin, getName, save, BRAN
       </div>
       {canManage && available.length > 0 && (
         <>
-          <button onClick={() => setAdding(v => !v)} style={{ marginBottom: "1rem", padding: "8px 18px", borderRadius: 9, border: `1.5px solid ${BRAND}`, background: adding ? `${BRAND}10` : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+          <button onClick={() => setAdding(v => !v)} style={{ marginBottom: "1rem", padding: "8px 18px", borderRadius: 9, border: `1.5px solid ${BRAND}`, background: adding ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
             {adding ? "Abbrechen" : "+ Mitglied hinzufügen"}
           </button>
           {adding && (
@@ -67,6 +67,22 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   const [expForm, setExpForm] = useState({ desc: "", amount: "", payer: "", participants: [] });
   const [showExpForm, setShowExpForm] = useState(false);
 
+  const [gpw, setGpw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
+  const [apw, setApw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
+
+  const resetPwForm = setter => setter({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
+
+  const changePw = async (state, setter, currentHash, onSaveHash) => {
+    if (state.next.length < 6) { setter(s => ({ ...s, err: "min" })); return; }
+    if (state.next !== state.confirm) { setter(s => ({ ...s, confirm: "", err: "mismatch" })); return; }
+    setter(s => ({ ...s, saving: true, err: null }));
+    const h = await sha256(state.current);
+    if (h !== currentHash) { setter(s => ({ ...s, saving: false, err: "wrong", current: "" })); return; }
+    const newHash = await sha256(state.next);
+    onSaveHash(newHash);
+    setter({ current: "", next: "", confirm: "", err: null, saving: false, done: true });
+  };
+
   const g = group;
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
   const save = fn => { const ng = { ...g, members: [...g.members], expenses: [...g.expenses], payments: [...g.payments] }; fn(ng); onUpdate(ng); };
@@ -100,7 +116,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
       {showAdminModal && (
         <ModalWrap>
-          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", border: `1.5px solid ${BRAND}33`, borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
             <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: BRAND }}>Administration</p>
             <Inp type="password" placeholder="Adminpasswort" value={adminPw} onChange={e => { setAdminPw(e.target.value); setAdminErr(false); }} onKeyDown={e => e.key === "Enter" && checkAdmin()} autoFocus style={{ border: adminErr ? "1.5px solid var(--color-border-danger)" : undefined }} />
             {adminErr && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-danger)", textAlign: "center" }}>Falsches Passwort</p>}
@@ -131,7 +147,10 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
           <NavBtn k="mitglieder" label="Mitglieder" />
           {!isAdmin
             ? <button onClick={() => setShowAdminModal(true)} style={{ padding: "7px 14px", borderRadius: 20, background: "transparent", color: "var(--color-text-secondary)", border: "0.5px solid var(--color-border-secondary)", cursor: "pointer", fontSize: 13 }}>Administration</button>
-            : <button onClick={() => setIsAdmin(false)} style={{ padding: "7px 14px", borderRadius: 20, background: BRAND_LT, color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>Admin aktiv ×</button>
+            : <>
+                <NavBtn k="passwörter" label="Passwörter" />
+                <button onClick={() => { setIsAdmin(false); if (view === "passwörter") setView("salden"); resetPwForm(setGpw); resetPwForm(setApw); }} style={{ padding: "7px 14px", borderRadius: 20, background: BRAND_LT, color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>Admin aktiv ×</button>
+              </>
           }
         </div>
 
@@ -140,7 +159,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
             {g.members.length === 0 && <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Noch keine Mitglieder.</p>}
             <div style={{ display: "grid", gap: 10, marginBottom: "1.5rem" }}>
               {g.members.map(uid => { const b = balances[uid] || 0; const name = getName(uid); return (
-                <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", border: `1px solid ${BRAND}15`, borderRadius: 12 }}>
+                <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", border: "1px solid var(--brand-a15)", borderRadius: 12 }}>
                   <Avatar name={name} />
                   <span style={{ flex: 1, fontWeight: 600, fontSize: 15, color: "var(--color-text-primary)" }}>{name}</span>
                   <span style={{ fontWeight: 700, fontSize: 15, color: b > 0.005 ? "var(--color-text-success)" : b < -0.005 ? "var(--color-text-danger)" : "var(--color-text-secondary)" }}>{b > 0.005 ? "+" : ""}{fmt(b)}</span>
@@ -151,7 +170,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
               <SectionLabel>Empfohlene Ausgleichszahlungen</SectionLabel>
               <div style={{ display: "grid", gap: 8 }}>
                 {transactions.map((t, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--color-background-secondary)", border: `1px solid ${BRAND}10`, borderRadius: 10, fontSize: 14 }}>
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--color-background-secondary)", border: "1px solid var(--brand-a10)", borderRadius: 10, fontSize: 14 }}>
                     <Avatar name={getName(t.from)} size={28} />
                     <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{getName(t.from)}</span>
                     <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>→ {getName(t.to)}</span>
@@ -167,7 +186,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
         {view === "ausgaben" && (
           <div>
-            <button onClick={() => setShowExpForm(v => !v)} style={{ marginBottom: "1rem", padding: "8px 18px", borderRadius: 9, border: `1.5px solid ${BRAND}`, background: showExpForm ? `${BRAND}10` : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+            <button onClick={() => setShowExpForm(v => !v)} style={{ marginBottom: "1rem", padding: "8px 18px", borderRadius: 9, border: `1.5px solid ${BRAND}`, background: showExpForm ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
               {showExpForm ? "Abbrechen" : "+ Ausgabe hinzufügen"}
             </button>
             {showExpForm && (
@@ -186,7 +205,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
               {[...g.expenses].reverse().map(exp => {
                 const parts = exp.participants.length > 0 ? exp.participants.map(uid => getName(uid)) : g.members.map(uid => getName(uid));
                 return (
-                  <div key={exp.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", border: `1px solid ${BRAND}15`, borderRadius: 12 }}>
+                  <div key={exp.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", border: "1px solid var(--brand-a15)", borderRadius: 12 }}>
                     <Avatar name={getName(exp.payer)} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ margin: 0, fontWeight: 600, fontSize: 15, color: "var(--color-text-primary)" }}>{exp.desc}</p>
@@ -212,7 +231,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
               <SectionLabel>Zahlungshistorie</SectionLabel>
               <div style={{ display: "grid", gap: 8 }}>
                 {[...g.payments].reverse().map(p => (
-                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--color-background-primary)", border: `1px solid ${BRAND}15`, borderRadius: 10, fontSize: 14 }}>
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--color-background-primary)", border: "1px solid var(--brand-a15)", borderRadius: 10, fontSize: 14 }}>
                     <Avatar name={getName(p.from)} size={28} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{getName(p.from)}</span>
@@ -230,6 +249,35 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
         {view === "mitglieder" && (
           <MitgliederView g={g} allUsers={allUsers} currentUser={currentUser} isAdmin={isAdmin} getName={getName} save={save} BRAND={BRAND} BRAND_LT={BRAND_LT} />
+        )}
+
+        {view === "passwörter" && isAdmin && (
+          <div style={{ display: "grid", gap: "1.5rem" }}>
+            {[
+              { label: "Gruppenpasswort", state: gpw, setter: setGpw, hash: g.pwHash, onSave: h => save(ng => { ng.pwHash = h; }) },
+              { label: "Adminpasswort",   state: apw, setter: setApw, hash: g.adminHash, onSave: h => save(ng => { ng.adminHash = h; }) },
+            ].map(({ label, state, setter, hash, onSave }) => (
+              <Card key={label} style={{ padding: "1rem" }}>
+                <SectionLabel>{label} ändern</SectionLabel>
+                {state.done ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-success)" }}>{label} erfolgreich geändert.</p>
+                    <button onClick={() => resetPwForm(setter)} style={{ padding: "7px 14px", borderRadius: 9, border: `1.5px solid ${BRAND}`, background: "transparent", color: BRAND, cursor: "pointer", fontSize: 13, fontWeight: 600, alignSelf: "start" }}>Weiteres Passwort ändern</button>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <Inp type="password" placeholder={`Aktuelles ${label}`} value={state.current} onChange={e => setter(s => ({ ...s, current: e.target.value, err: null }))} style={{ border: state.err === "wrong" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+                    {state.err === "wrong" && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Aktuelles Passwort falsch.</p>}
+                    <Inp type="password" placeholder="Neues Passwort" value={state.next} onChange={e => setter(s => ({ ...s, next: e.target.value, err: null }))} style={{ border: state.err === "min" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+                    {state.err === "min" && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Mindestens 6 Zeichen.</p>}
+                    <Inp type="password" placeholder="Neues Passwort bestätigen" value={state.confirm} onChange={e => setter(s => ({ ...s, confirm: e.target.value, err: null }))} onKeyDown={e => e.key === "Enter" && changePw(state, setter, hash, onSave)} style={{ border: state.err === "mismatch" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+                    {state.err === "mismatch" && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Passwörter stimmen nicht überein.</p>}
+                    <PrimaryBtn onClick={() => changePw(state, setter, hash, onSave)} disabled={state.saving || !state.current || !state.next || !state.confirm} full>{state.saving ? "…" : "Speichern"}</PrimaryBtn>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </div>

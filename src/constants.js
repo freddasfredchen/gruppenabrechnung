@@ -4,8 +4,8 @@ export const APP_PW_HASH   = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e186
 export const LIST_ADM_HASH = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b";
 export const VORSTAND_HASH = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b";
 
-export const BRAND         = "#3D1A24";
-export const BRAND_LT      = "#6B2D3E";
+export const BRAND         = "var(--brand)";
+export const BRAND_LT      = "var(--brand-lt)";
 export const SILVER        = "#B0AEA8";
 export const COLORS_AVATAR = ["#7F77DD","#1D9E75","#D85A30","#378ADD","#D4537E","#BA7517","#639922","#E24B4A"];
 export const GROUP_ICONS   = ["♟","⚽","🎲","🍕","✈️","🎮","🏋️","🎵","🎯","💼"];

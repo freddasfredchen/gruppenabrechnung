@@ -22,7 +22,7 @@ export default function AppLoginScreen({ onSuccess }) {
             <p style={{ fontWeight: 800, fontSize: 22, margin: "0 0 4px", color: BRAND }}>Gruppenabrechnung</p>
             <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0 }}>Dawson Schach und Spiele Club</p>
           </div>
-          <div style={{ borderTop: `1px solid ${BRAND}22`, paddingTop: 20, display: "grid", gap: 12 }}>
+          <div style={{ borderTop: "1px solid var(--brand-a22)", paddingTop: 20, display: "grid", gap: 12 }}>
             <Inp type="password" placeholder="App-Passwort" value={pw} onChange={e => { setPw(e.target.value); setErr(false); }} onKeyDown={e => e.key === "Enter" && check()} autoFocus style={{ border: err ? "1.5px solid var(--color-border-danger)" : undefined }} />
             {err && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-danger)", textAlign: "center" }}>Falsches Passwort</p>}
             <PrimaryBtn onClick={check} disabled={loading || !pw} full>{loading ? "…" : "Weiter"}</PrimaryBtn>

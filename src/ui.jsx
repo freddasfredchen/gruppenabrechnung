@@ -31,7 +31,7 @@ export function SectionLabel({ children }) {
 }
 
 export function Card({ children, style = {} }) {
-  return <div style={{ background: "var(--color-background-primary)", border: `1px solid ${BRAND}18`, borderRadius: 14, padding: "1.25rem", ...style }}>{children}</div>;
+  return <div style={{ background: "var(--color-background-primary)", border: "1px solid var(--brand-a18)", borderRadius: 14, padding: "1.25rem", ...style }}>{children}</div>;
 }
 
 export function ModalWrap({ children }) {

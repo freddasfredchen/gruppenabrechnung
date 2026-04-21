@@ -4,7 +4,7 @@ import { computeBalances, computeTransactions } from "../logic";
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
 import UserManagement from "./UserManagement";
 
-export default function GroupList({ groups, users, currentUser, onEnter, onCreateGroup, onDeleteGroup, onLogout }) {
+export default function GroupList({ groups, users, currentUser, onEnter, onCreateGroup, onDeleteGroup, onLogout, onUpdateUserPw }) {
   const allUsers = [VORSTAND_USER, ...users];
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
 
@@ -28,6 +28,34 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const [ladminLoading, setLadminLoading] = useState(false);
 
   const [showUserMgmt, setShowUserMgmt] = useState(false);
+
+  const [showPwChange, setShowPwChange] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwChangeErr, setPwChangeErr] = useState(null);
+  const [pwChanging, setPwChanging] = useState(false);
+  const [pwChangeDone, setPwChangeDone] = useState(false);
+
+  const closePwModal = () => {
+    setShowPwChange(false);
+    setPwCurrent(""); setPwNew(""); setPwConfirm("");
+    setPwChangeErr(null); setPwChangeDone(false);
+  };
+
+  const submitPwChange = async () => {
+    if (pwNew.length < 6) { setPwChangeErr("min"); return; }
+    if (pwNew !== pwConfirm) { setPwChangeErr("mismatch"); setPwConfirm(""); return; }
+    setPwChanging(true); setPwChangeErr(null);
+    const currentHash = await sha256(pwCurrent);
+    if (currentHash !== currentUser.pwHash) {
+      setPwChanging(false); setPwChangeErr("wrong"); setPwCurrent(""); return;
+    }
+    const newHash = await sha256(pwNew);
+    await onUpdateUserPw(currentUser.id, newHash);
+    setPwChanging(false); setPwChangeDone(true);
+    setPwCurrent(""); setPwNew(""); setPwConfirm("");
+  };
 
   const checkListAdmin = async () => {
     setLadminLoading(true); setLadminErr(false);
@@ -62,9 +90,36 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
         <UserManagement users={users} onAdd={u => onCreateGroup(null, u)} onRemove={id => onDeleteGroup(null, id)} onClose={() => setShowUserMgmt(false)} />
       )}
 
+      {showPwChange && (
+        <ModalWrap>
+          <div style={{ width: "100%", maxWidth: 320, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+            <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: BRAND }}>Passwort ändern</p>
+            {pwChangeDone ? (
+              <>
+                <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-success)", textAlign: "center" }}>Passwort erfolgreich geändert.</p>
+                <PrimaryBtn onClick={closePwModal} full>Schließen</PrimaryBtn>
+              </>
+            ) : (
+              <>
+                <Inp type="password" placeholder="Aktuelles Passwort" value={pwCurrent} onChange={e => { setPwCurrent(e.target.value); setPwChangeErr(null); }} autoFocus style={{ border: pwChangeErr === "wrong" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+                {pwChangeErr === "wrong" && <p style={{ margin: "-8px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Aktuelles Passwort falsch.</p>}
+                <Inp type="password" placeholder="Neues Passwort" value={pwNew} onChange={e => { setPwNew(e.target.value); setPwChangeErr(null); }} style={{ border: pwChangeErr === "min" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+                {pwChangeErr === "min" && <p style={{ margin: "-8px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Mindestens 6 Zeichen.</p>}
+                <Inp type="password" placeholder="Neues Passwort bestätigen" value={pwConfirm} onChange={e => { setPwConfirm(e.target.value); setPwChangeErr(null); }} onKeyDown={e => e.key === "Enter" && submitPwChange()} style={{ border: pwChangeErr === "mismatch" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+                {pwChangeErr === "mismatch" && <p style={{ margin: "-8px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Passwörter stimmen nicht überein.</p>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={closePwModal} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "0.5px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
+                  <PrimaryBtn onClick={submitPwChange} disabled={pwChanging || !pwCurrent || !pwNew || !pwConfirm} full>{pwChanging ? "…" : "Speichern"}</PrimaryBtn>
+                </div>
+              </>
+            )}
+          </div>
+        </ModalWrap>
+      )}
+
       {showListAdminModal && (
         <ModalWrap>
-          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", border: `1.5px solid ${BRAND}33`, borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
             <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: BRAND }}>Administration</p>
             <Inp type="password" placeholder="Adminpasswort" value={ladminPw} onChange={e => { setLadminPw(e.target.value); setLadminErr(false); }} onKeyDown={e => e.key === "Enter" && checkListAdmin()} autoFocus style={{ border: ladminErr ? "1.5px solid var(--color-border-danger)" : undefined }} />
             {ladminErr && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-danger)", textAlign: "center" }}>Falsches Passwort</p>}
@@ -78,7 +133,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
       {unlockGroup && (
         <ModalWrap>
-          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", border: `1.5px solid ${BRAND}33`, borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: unlockGroup.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#fff", flexShrink: 0 }}>{unlockGroup.icon}</div>
               <div>
@@ -106,6 +161,9 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             {currentUser.isVorstand && (
               <button onClick={() => setShowUserMgmt(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Nutzer</button>
             )}
+            {!currentUser.isVorstand && (
+              <button onClick={() => setShowPwChange(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Passwort</button>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 12px 5px 5px", cursor: "pointer" }} onClick={onLogout}>
               <Avatar name={currentUser.name} size={26} />
               <span style={{ fontSize: 13, color: "#fff", fontWeight: 500 }}>{currentUser.name}</span>
@@ -130,13 +188,13 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             const openTxs = computeTransactions(computeBalances(g.members, g.expenses, g.payments)).length;
             return (
               <div key={g.id} onClick={() => !isListAdmin && setUnlocking(g.id)}
-                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: "var(--color-background-primary)", border: `1px solid ${BRAND}1A`, borderRadius: 14, cursor: isListAdmin ? "default" : "pointer" }}>
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: "var(--color-background-primary)", border: "1px solid var(--brand-a1a)", borderRadius: 14, cursor: isListAdmin ? "default" : "pointer" }}>
                 <div style={{ width: 46, height: 46, borderRadius: 12, background: g.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, color: "#fff" }}>{g.icon}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: "var(--color-text-primary)" }}>{g.name}</p>
                   <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--color-text-secondary)" }}>{g.members.length} Mitglieder · {fmt(total)} Gesamt</p>
                 </div>
-                {openTxs > 0 && <span style={{ background: `${BRAND}15`, color: BRAND, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20, whiteSpace: "nowrap" }}>{openTxs} offen</span>}
+                {openTxs > 0 && <span style={{ background: "var(--brand-a15)", color: BRAND, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20, whiteSpace: "nowrap" }}>{openTxs} offen</span>}
                 {isListAdmin
                   ? <button onClick={e => { e.stopPropagation(); onDeleteGroup(g.id, null); }} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 20, lineHeight: 1, padding: "0 4px", fontWeight: 700, flexShrink: 0 }}>×</button>
                   : <span style={{ fontSize: 20, color: SILVER }}>›</span>
@@ -147,7 +205,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
           {groups.length === 0 && <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Noch keine Gruppen.</p>}
         </div>
 
-        <button onClick={() => setShowCreate(v => !v)} style={{ padding: "9px 20px", borderRadius: 10, border: `1.5px solid ${BRAND}`, background: showCreate ? `${BRAND}10` : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 700, width: "100%", marginBottom: showCreate ? "1rem" : 0 }}>
+        <button onClick={() => setShowCreate(v => !v)} style={{ padding: "9px 20px", borderRadius: 10, border: `1.5px solid ${BRAND}`, background: showCreate ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 700, width: "100%", marginBottom: showCreate ? "1rem" : 0 }}>
           {showCreate ? "Abbrechen" : "+ Neue Gruppe erstellen"}
         </button>
 
@@ -166,7 +224,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
               <div>
                 <SectionLabel>Symbol</SectionLabel>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {GROUP_ICONS.map(ic => <button key={ic} onClick={() => setNewIcon(ic)} style={{ width: 38, height: 38, borderRadius: 9, border: newIcon === ic ? `2px solid ${BRAND}` : "0.5px solid var(--color-border-secondary)", background: newIcon === ic ? `${BRAND}15` : "var(--color-background-secondary)", fontSize: 18, cursor: "pointer", transition: "all 0.15s" }}>{ic}</button>)}
+                  {GROUP_ICONS.map(ic => <button key={ic} onClick={() => setNewIcon(ic)} style={{ width: 38, height: 38, borderRadius: 9, border: newIcon === ic ? `2px solid ${BRAND}` : "0.5px solid var(--color-border-secondary)", background: newIcon === ic ? "var(--brand-a15)" : "var(--color-background-secondary)", fontSize: 18, cursor: "pointer", transition: "all 0.15s" }}>{ic}</button>)}
                 </div>
               </div>
               <div>

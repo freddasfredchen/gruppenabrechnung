@@ -28,15 +28,15 @@ export default function UserLoginScreen({ users, onLogin }) {
           <div style={{ display: "grid", gap: 8, maxHeight: 240, overflowY: "auto" }}>
             {allUsers.map(u => (
               <div key={u.id} onClick={() => { setSelected(u); setPw(""); setErr(false); }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, border: selected?.id === u.id ? `2px solid ${BRAND}` : `1px solid ${BRAND}15`, cursor: "pointer", background: selected?.id === u.id ? `${BRAND}08` : "var(--color-background-secondary)", transition: "all 0.15s" }}>
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, border: selected?.id === u.id ? `2px solid ${BRAND}` : "1px solid var(--brand-a15)", cursor: "pointer", background: selected?.id === u.id ? "var(--brand-a08)" : "var(--color-background-secondary)", transition: "all 0.15s" }}>
                 <Avatar name={u.name} size={34} />
                 <span style={{ fontWeight: selected?.id === u.id ? 700 : 500, fontSize: 14, color: "var(--color-text-primary)" }}>{u.name}</span>
-                {u.isVorstand && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: `${BRAND}15`, color: BRAND }}>VORSTAND</span>}
+                {u.isVorstand && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "var(--brand-a15)", color: BRAND }}>VORSTAND</span>}
               </div>
             ))}
           </div>
           {selected && (
-            <div style={{ borderTop: `1px solid ${BRAND}15`, paddingTop: 14, display: "grid", gap: 10 }}>
+            <div style={{ borderTop: "1px solid var(--brand-a15)", paddingTop: 14, display: "grid", gap: 10 }}>
               <Inp type="password" placeholder={`Passwort für ${selected.name}`} value={pw} onChange={e => { setPw(e.target.value); setErr(false); }} onKeyDown={e => e.key === "Enter" && check()} autoFocus style={{ border: err ? "1.5px solid var(--color-border-danger)" : undefined }} />
               {err && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-danger)", textAlign: "center" }}>Falsches Passwort</p>}
               <PrimaryBtn onClick={check} disabled={loading || !pw} full>{loading ? "…" : `Als ${selected.name} einloggen`}</PrimaryBtn>
