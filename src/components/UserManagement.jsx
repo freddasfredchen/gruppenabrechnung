@@ -2,10 +2,21 @@ import { useState } from "react";
 import { sha256, BRAND, BRAND_LT } from "../constants";
 import { ModalWrap, Avatar, SectionLabel, Inp, PrimaryBtn } from "../ui";
 
-export default function UserManagement({ users, onAdd, onRemove, onClose }) {
+export default function UserManagement({ users, onAdd, onRemove, onResetPw, onClose }) {
   const [name, setName] = useState("");
   const [pw, setPw] = useState("");
   const [creating, setCreating] = useState(false);
+  const [resetting, setResetting] = useState(new Set());
+  const [resetDone, setResetDone] = useState(new Set());
+
+  const handleReset = async (userId) => {
+    setResetting(s => new Set(s).add(userId));
+    const hash = await sha256("asdf");
+    await onResetPw(userId, hash);
+    setResetting(s => { const n = new Set(s); n.delete(userId); return n; });
+    setResetDone(s => new Set(s).add(userId));
+    setTimeout(() => setResetDone(s => { const n = new Set(s); n.delete(userId); return n; }), 2000);
+  };
 
   const create = async () => {
     if (!name.trim() || !pw.trim()) return;
@@ -33,6 +44,10 @@ export default function UserManagement({ users, onAdd, onRemove, onClose }) {
             <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: "var(--radius-sm)", background: "var(--color-background-secondary)", border: "1px solid var(--brand-a10)" }}>
               <Avatar name={u.name} size={30} />
               <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)" }}>{u.name}</span>
+              {resetDone.has(u.id)
+                ? <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-success)", padding: "2px 8px" }}>✓ zurückgesetzt</span>
+                : <button onClick={() => handleReset(u.id)} disabled={resetting.has(u.id)} title="Passwort auf 'asdf' zurücksetzen" style={{ background: "none", border: "1px solid var(--color-border-secondary)", borderRadius: "var(--radius-sm)", cursor: "pointer", color: "var(--color-text-secondary)", fontSize: 12, fontWeight: 600, padding: "3px 8px", marginRight: 4, opacity: resetting.has(u.id) ? 0.5 : 1 }}>{resetting.has(u.id) ? "…" : "↺ Reset"}</button>
+              }
               <button onClick={() => onRemove(u.id)} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 18, lineHeight: 1, fontWeight: 700, padding: "0 2px" }}>×</button>
             </div>
           ))}

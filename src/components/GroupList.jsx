@@ -87,7 +87,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
       {showUserMgmt && currentUser.isVorstand && (
-        <UserManagement users={users} onAdd={u => onCreateGroup(null, u)} onRemove={id => onDeleteGroup(null, id)} onClose={() => setShowUserMgmt(false)} />
+        <UserManagement users={users} onAdd={u => onCreateGroup(null, u)} onRemove={id => onDeleteGroup(null, id)} onResetPw={onUpdateUserPw} onClose={() => setShowUserMgmt(false)} />
       )}
 
       {showPwChange && (

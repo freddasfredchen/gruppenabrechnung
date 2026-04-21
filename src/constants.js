@@ -2,7 +2,7 @@ export const SK_SESSION = "vapp_session";
 
 export const APP_PW_HASH   = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b";
 export const LIST_ADM_HASH = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b";
-export const VORSTAND_HASH = "f0e4c2f76c58916ec258f246851bea091d14d4247a2fc3e18694461b1816e13b";
+export const VORSTAND_HASH = "4e88ad68f7544c6222016bf1a55fca46e081c7d0bece9767613b017143ddc2d5";
 
 export const BRAND         = "var(--brand)";
 export const BRAND_LT      = "var(--brand-lt)";
