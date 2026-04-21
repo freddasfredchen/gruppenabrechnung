@@ -28,10 +28,10 @@ export default function UserLoginScreen({ users, onLogin }) {
           <div style={{ display: "grid", gap: 8, maxHeight: 240, overflowY: "auto" }}>
             {allUsers.map(u => (
               <div key={u.id} onClick={() => { setSelected(u); setPw(""); setErr(false); }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, border: selected?.id === u.id ? `2px solid ${BRAND}` : "1px solid var(--brand-a15)", cursor: "pointer", background: selected?.id === u.id ? "var(--brand-a08)" : "var(--color-background-secondary)", transition: "all 0.15s" }}>
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: "var(--radius-sm)", border: selected?.id === u.id ? `2px solid ${BRAND}` : "1px solid var(--brand-a15)", cursor: "pointer", background: selected?.id === u.id ? "var(--brand-a08)" : "var(--color-background-secondary)", transition: "all 0.15s" }}>
                 <Avatar name={u.name} size={34} />
                 <span style={{ fontWeight: selected?.id === u.id ? 700 : 500, fontSize: 14, color: "var(--color-text-primary)" }}>{u.name}</span>
-                {u.isVorstand && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "var(--brand-a15)", color: BRAND }}>VORSTAND</span>}
+                {u.isVorstand && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--radius-full)", background: "var(--brand-a15)", color: BRAND }}>VORSTAND</span>}
               </div>
             ))}
           </div>

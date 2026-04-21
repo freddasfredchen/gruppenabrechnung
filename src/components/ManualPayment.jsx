@@ -18,7 +18,7 @@ export default function ManualPayment({ members, getName, onSave }) {
   if (members.length < 2) return null;
   return (
     <div>
-      <button onClick={() => setOpen(v => !v)} style={{ marginBottom: "1rem", padding: "8px 18px", borderRadius: 9, border: `1.5px solid ${BRAND}`, background: open ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+      <button onClick={() => setOpen(v => !v)} style={{ marginBottom: "1rem", padding: "8px 18px", borderRadius: "var(--radius-sm)", border: `1.5px solid ${BRAND}`, background: open ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
         {open ? "Abbrechen" : "+ Zahlung manuell eintragen"}
       </button>
       {open && (

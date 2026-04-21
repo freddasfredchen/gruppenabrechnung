@@ -13,6 +13,15 @@ export const GROUP_COLORS  = [BRAND, BRAND_LT, "#1D6B8C","#1D9E75","#7F77DD","#B
 
 export const VORSTAND_USER = { id:"vorstand", name:"Vorstand", pwHash: VORSTAND_HASH, isVorstand: true };
 
+export const CATEGORIES = [
+  { id: "food",      label: "Essen",        icon: "🍕", color: "#E67E22" },
+  { id: "transport", label: "Transport",    icon: "🚗", color: "#3498DB" },
+  { id: "lodging",   label: "Unterkunft",   icon: "🏠", color: "#9B59B6" },
+  { id: "activity",  label: "Aktivitäten",  icon: "🎭", color: "#1ABC9C" },
+  { id: "shopping",  label: "Einkauf",      icon: "🛒", color: "#E74C3C" },
+  { id: "other",     label: "Sonstiges",    icon: "📦", color: "#95A5A6" },
+];
+
 export async function sha256(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");

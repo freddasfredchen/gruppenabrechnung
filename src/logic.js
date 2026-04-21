@@ -2,10 +2,27 @@ export function computeBalances(members, expenses, payments) {
   const bal = {};
   members.forEach(m => bal[m] = 0);
   expenses.forEach(exp => {
-    const parts = exp.participants.length > 0 ? exp.participants : members;
-    const share = exp.amount / parts.length;
+    const parts = exp.participants?.length > 0 ? exp.participants : members;
+    let shares = {};
+
+    if (exp.splitMode === "exact" && exp.shares && Object.keys(exp.shares).length > 0) {
+      shares = { ...exp.shares };
+    } else if (exp.splitMode === "proportional" && exp.shares && Object.keys(exp.shares).length > 0) {
+      const total = Object.values(exp.shares).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+      if (total > 0) {
+        Object.entries(exp.shares).forEach(([uid, pct]) => {
+          shares[uid] = exp.amount * ((parseFloat(pct) || 0) / total);
+        });
+      }
+    } else {
+      const share = exp.amount / parts.length;
+      parts.forEach(uid => { shares[uid] = share; });
+    }
+
     bal[exp.payer] = (bal[exp.payer] || 0) + exp.amount;
-    parts.forEach(uid => { bal[uid] = (bal[uid] || 0) - share; });
+    Object.entries(shares).forEach(([uid, amt]) => {
+      bal[uid] = (bal[uid] || 0) - (parseFloat(amt) || 0);
+    });
   });
   (payments || []).forEach(p => {
     bal[p.from] = (bal[p.from] || 0) + p.amount;

@@ -17,20 +17,20 @@ export default function UserManagement({ users, onAdd, onRemove, onClose }) {
 
   return (
     <ModalWrap>
-      <div style={{ width: "100%", maxWidth: 380, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: 16, padding: "1.5rem", display: "grid", gap: 16, maxHeight: "80vh", overflowY: "auto", boxSizing: "border-box" }}>
+      <div style={{ width: "100%", maxWidth: 380, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: "var(--radius)", padding: "1.5rem", display: "grid", gap: 16, maxHeight: "80vh", overflowY: "auto", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ fontWeight: 700, fontSize: 16, margin: 0, color: BRAND }}>Nutzerverwaltung</p>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-secondary)", fontSize: 20, lineHeight: 1 }}>×</button>
         </div>
         <div style={{ display: "grid", gap: 8 }}>
           <SectionLabel>Bestehende Konten</SectionLabel>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "var(--brand-a08)", border: "1px solid var(--brand-a15)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: "var(--radius-sm)", background: "var(--brand-a08)", border: "1px solid var(--brand-a15)" }}>
             <Avatar name="Vorstand" size={30} />
             <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--color-text-primary)" }}>Vorstand</span>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "var(--brand-a15)", color: BRAND }}>VORSTAND</span>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--radius-full)", background: "var(--brand-a15)", color: BRAND }}>VORSTAND</span>
           </div>
           {users.map(u => (
-            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "var(--color-background-secondary)", border: "1px solid var(--brand-a10)" }}>
+            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: "var(--radius-sm)", background: "var(--color-background-secondary)", border: "1px solid var(--brand-a10)" }}>
               <Avatar name={u.name} size={30} />
               <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)" }}>{u.name}</span>
               <button onClick={() => onRemove(u.id)} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 18, lineHeight: 1, fontWeight: 700, padding: "0 2px" }}>×</button>

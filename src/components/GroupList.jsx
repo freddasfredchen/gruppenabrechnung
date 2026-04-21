@@ -92,7 +92,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
       {showPwChange && (
         <ModalWrap>
-          <div style={{ width: "100%", maxWidth: 320, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+          <div style={{ width: "100%", maxWidth: 320, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
             <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: BRAND }}>Passwort ändern</p>
             {pwChangeDone ? (
               <>
@@ -108,7 +108,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
                 <Inp type="password" placeholder="Neues Passwort bestätigen" value={pwConfirm} onChange={e => { setPwConfirm(e.target.value); setPwChangeErr(null); }} onKeyDown={e => e.key === "Enter" && submitPwChange()} style={{ border: pwChangeErr === "mismatch" ? "1.5px solid var(--color-border-danger)" : undefined }} />
                 {pwChangeErr === "mismatch" && <p style={{ margin: "-8px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Passwörter stimmen nicht überein.</p>}
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={closePwModal} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "0.5px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
+                  <button onClick={closePwModal} style={{ flex: 1, padding: "9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
                   <PrimaryBtn onClick={submitPwChange} disabled={pwChanging || !pwCurrent || !pwNew || !pwConfirm} full>{pwChanging ? "…" : "Speichern"}</PrimaryBtn>
                 </div>
               </>
@@ -119,12 +119,12 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
       {showListAdminModal && (
         <ModalWrap>
-          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
             <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: BRAND }}>Administration</p>
             <Inp type="password" placeholder="Adminpasswort" value={ladminPw} onChange={e => { setLadminPw(e.target.value); setLadminErr(false); }} onKeyDown={e => e.key === "Enter" && checkListAdmin()} autoFocus style={{ border: ladminErr ? "1.5px solid var(--color-border-danger)" : undefined }} />
             {ladminErr && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-danger)", textAlign: "center" }}>Falsches Passwort</p>}
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => { setShowListAdminModal(false); setLadminPw(""); setLadminErr(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "0.5px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
+              <button onClick={() => { setShowListAdminModal(false); setLadminPw(""); setLadminErr(false); }} style={{ flex: 1, padding: "9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
               <PrimaryBtn onClick={checkListAdmin} disabled={ladminLoading || !ladminPw} full>{ladminLoading ? "…" : "Bestätigen"}</PrimaryBtn>
             </div>
           </div>
@@ -133,9 +133,9 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
       {unlockGroup && (
         <ModalWrap>
-          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", border: "1.5px solid var(--brand-a33)", borderRadius: 16, padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: unlockGroup.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#fff", flexShrink: 0 }}>{unlockGroup.icon}</div>
+              <div style={{ width: 40, height: 40, borderRadius: "var(--radius-sm)", background: unlockGroup.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#fff", flexShrink: 0 }}>{unlockGroup.icon}</div>
               <div>
                 <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: "var(--color-text-primary)" }}>{unlockGroup.name}</p>
                 <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: 0 }}>Passwort eingeben</p>
@@ -144,14 +144,14 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             <Inp type="password" placeholder="Passwort" value={pw} onChange={e => { setPw(e.target.value); setPwErr(false); }} onKeyDown={e => e.key === "Enter" && tryUnlock(unlockGroup)} autoFocus style={{ border: pwErr ? "1.5px solid var(--color-border-danger)" : undefined }} />
             {pwErr && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-danger)", textAlign: "center" }}>Falsches Passwort</p>}
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => { setUnlocking(null); setPw(""); setPwErr(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "0.5px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
+              <button onClick={() => { setUnlocking(null); setPw(""); setPwErr(false); }} style={{ flex: 1, padding: "9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
               <PrimaryBtn onClick={() => tryUnlock(unlockGroup)} disabled={!pw} full>Öffnen</PrimaryBtn>
             </div>
           </div>
         </ModalWrap>
       )}
 
-      <div style={{ background: BRAND, padding: "1.25rem 1.25rem 1rem", borderRadius: "0 0 20px 20px", marginBottom: "1.5rem" }}>
+      <div style={{ background: BRAND, padding: "1.25rem 1.25rem 1rem", borderRadius: "0 0 22px 22px", marginBottom: "1.5rem" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <p style={{ fontWeight: 800, fontSize: 18, margin: 0, color: "#fff" }}>Gruppenabrechnung</p>
@@ -159,12 +159,12 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {currentUser.isVorstand && (
-              <button onClick={() => setShowUserMgmt(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Nutzer</button>
+              <button onClick={() => setShowUserMgmt(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Nutzer</button>
             )}
             {!currentUser.isVorstand && (
-              <button onClick={() => setShowPwChange(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Passwort</button>
+              <button onClick={() => setShowPwChange(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Passwort</button>
             )}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 12px 5px 5px", cursor: "pointer" }} onClick={onLogout}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: "var(--radius-full)", padding: "5px 12px 5px 5px", cursor: "pointer" }} onClick={onLogout}>
               <Avatar name={currentUser.name} size={26} />
               <span style={{ fontSize: 13, color: "#fff", fontWeight: 500 }}>{currentUser.name}</span>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginLeft: 4 }}>↩</span>
@@ -177,8 +177,8 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
           <SectionLabel style={{ margin: 0 }}>{groups.length} {groups.length === 1 ? "Gruppe" : "Gruppen"}</SectionLabel>
           {!isListAdmin
-            ? <button onClick={() => setShowListAdminModal(true)} style={{ padding: "5px 12px", borderRadius: 20, background: "transparent", color: "var(--color-text-secondary)", border: "0.5px solid var(--color-border-secondary)", cursor: "pointer", fontSize: 12 }}>Administration</button>
-            : <button onClick={() => setIsListAdmin(false)} style={{ padding: "5px 12px", borderRadius: 20, background: BRAND_LT, color: "#fff", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Admin aktiv ×</button>
+            ? <button onClick={() => setShowListAdminModal(true)} style={{ padding: "5px 12px", borderRadius: "var(--radius-full)", background: "transparent", color: "var(--color-text-secondary)", border: "0.5px solid var(--color-border-secondary)", cursor: "pointer", fontSize: 12 }}>Administration</button>
+            : <button onClick={() => setIsListAdmin(false)} style={{ padding: "5px 12px", borderRadius: "var(--radius-full)", background: BRAND_LT, color: "#fff", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Admin aktiv ×</button>
           }
         </div>
 
@@ -188,13 +188,13 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             const openTxs = computeTransactions(computeBalances(g.members, g.expenses, g.payments)).length;
             return (
               <div key={g.id} onClick={() => !isListAdmin && setUnlocking(g.id)}
-                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: "var(--color-background-primary)", border: "1px solid var(--brand-a1a)", borderRadius: 14, cursor: isListAdmin ? "default" : "pointer" }}>
-                <div style={{ width: 46, height: 46, borderRadius: 12, background: g.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, color: "#fff" }}>{g.icon}</div>
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-sm)", cursor: isListAdmin ? "default" : "pointer" }}>
+                <div style={{ width: 46, height: 46, borderRadius: "var(--radius-sm)", background: g.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, color: "#fff" }}>{g.icon}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: "var(--color-text-primary)" }}>{g.name}</p>
                   <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--color-text-secondary)" }}>{g.members.length} Mitglieder · {fmt(total)} Gesamt</p>
                 </div>
-                {openTxs > 0 && <span style={{ background: "var(--brand-a15)", color: BRAND, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20, whiteSpace: "nowrap" }}>{openTxs} offen</span>}
+                {openTxs > 0 && <span style={{ background: "var(--brand-a15)", color: BRAND, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: "var(--radius-full)", whiteSpace: "nowrap" }}>{openTxs} offen</span>}
                 {isListAdmin
                   ? <button onClick={e => { e.stopPropagation(); onDeleteGroup(g.id, null); }} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 20, lineHeight: 1, padding: "0 4px", fontWeight: 700, flexShrink: 0 }}>×</button>
                   : <span style={{ fontSize: 20, color: SILVER }}>›</span>
@@ -205,7 +205,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
           {groups.length === 0 && <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Noch keine Gruppen.</p>}
         </div>
 
-        <button onClick={() => setShowCreate(v => !v)} style={{ padding: "9px 20px", borderRadius: 10, border: `1.5px solid ${BRAND}`, background: showCreate ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 700, width: "100%", marginBottom: showCreate ? "1rem" : 0 }}>
+        <button onClick={() => setShowCreate(v => !v)} style={{ padding: "9px 20px", borderRadius: "var(--radius-sm)", border: `1.5px solid ${BRAND}`, background: showCreate ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 700, width: "100%", marginBottom: showCreate ? "1rem" : 0 }}>
           {showCreate ? "Abbrechen" : "+ Neue Gruppe erstellen"}
         </button>
 
@@ -224,7 +224,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
               <div>
                 <SectionLabel>Symbol</SectionLabel>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {GROUP_ICONS.map(ic => <button key={ic} onClick={() => setNewIcon(ic)} style={{ width: 38, height: 38, borderRadius: 9, border: newIcon === ic ? `2px solid ${BRAND}` : "0.5px solid var(--color-border-secondary)", background: newIcon === ic ? "var(--brand-a15)" : "var(--color-background-secondary)", fontSize: 18, cursor: "pointer", transition: "all 0.15s" }}>{ic}</button>)}
+                  {GROUP_ICONS.map(ic => <button key={ic} onClick={() => setNewIcon(ic)} style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", border: newIcon === ic ? `2px solid ${BRAND}` : "0.5px solid var(--color-border-secondary)", background: newIcon === ic ? "var(--brand-a15)" : "var(--color-background-secondary)", fontSize: 18, cursor: "pointer", transition: "all 0.15s" }}>{ic}</button>)}
                 </div>
               </div>
               <div>
