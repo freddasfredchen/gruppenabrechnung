@@ -200,7 +200,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   };
 
   const removeExpense = id => save(ng => { ng.expenses = ng.expenses.filter(e => e.id !== id); });
-  const recordPayment = (from, to, amount) => save(ng => { ng.payments = [...ng.payments, { id: Date.now() + "", from, to, amount, date: new Date().toLocaleDateString("de-DE") }]; });
+  const recordPayment = (from, to, amount) => save(ng => { ng.payments = [...ng.payments, { id: Date.now() + "", from, to, amount, date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }]; });
   const removePayment = id => save(ng => { ng.payments = ng.payments.filter(p => p.id !== id); });
   const togglePart = uid => setExpForm(f => ({ ...f, participants: f.participants.includes(uid) ? f.participants.filter(p => p !== uid) : [...f.participants, uid] }));
 
@@ -301,15 +301,18 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
             {transactions.length > 0 && <>
               <SectionLabel>Empfohlene Ausgleichszahlungen</SectionLabel>
               <div style={{ display: "grid", gap: 8 }}>
-                {transactions.map((t, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)", fontSize: 14 }}>
-                    <Avatar name={getName(t.from)} size={28} />
-                    <span style={{ fontWeight: 600 }}>{getName(t.from)}</span>
-                    <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>→ {getName(t.to)}</span>
-                    <span style={{ fontWeight: 700, marginRight: 8 }}>{fmt(t.amt)}</span>
-                    <button onClick={() => recordPayment(t.from, t.to, t.amt)} style={{ padding: "5px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, border: `1.5px solid ${BRAND}`, background: "transparent", cursor: "pointer", color: BRAND, fontWeight: 600 }}>Tilgen</button>
-                  </div>
-                ))}
+                {(isAdmin || currentUser.isVorstand ? transactions : transactions.filter(t => t.from === currentUser.id || t.to === currentUser.id)).map((t, i) => {
+                  const canSettle = isAdmin || currentUser.isVorstand || t.from === currentUser.id;
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)", fontSize: 14 }}>
+                      <Avatar name={getName(t.from)} size={28} />
+                      <span style={{ fontWeight: 600 }}>{getName(t.from)}</span>
+                      <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>→ {getName(t.to)}</span>
+                      <span style={{ fontWeight: 700, marginRight: canSettle ? 8 : 0 }}>{fmt(t.amt)}</span>
+                      {canSettle && <button onClick={() => recordPayment(t.from, t.to, t.amt)} style={{ padding: "5px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, border: `1.5px solid ${BRAND}`, background: "transparent", cursor: "pointer", color: BRAND, fontWeight: 600 }}>Tilgen</button>}
+                    </div>
+                  );
+                })}
               </div>
             </>}
             {transactions.length === 0 && g.expenses.length > 0 && <p style={{ color: "var(--color-text-success)", fontSize: 14, fontWeight: 700, marginTop: "0.5rem" }}>Alle Schulden ausgeglichen!</p>}
@@ -421,7 +424,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontWeight: 600 }}>{getName(p.from)}</span>
                       <span style={{ color: "var(--color-text-secondary)" }}> → {getName(p.to)}</span>
-                      <span style={{ display: "block", fontSize: 11, color: "var(--color-text-tertiary)" }}>{p.date}</span>
+                      <span style={{ display: "block", fontSize: 11, color: "var(--color-text-tertiary)" }}>{p.date}{p.recordedBy && p.recordedBy !== p.from ? ` · eingetragen von ${getName(p.recordedBy)}` : ""}</span>
                     </div>
                     <span style={{ fontWeight: 700, color: "var(--color-text-success)", marginRight: isAdmin ? 8 : 0 }}>{fmt(p.amount)}</span>
                     {isAdmin && <button onClick={() => removePayment(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 18, lineHeight: 1, padding: "0 2px", fontWeight: 700 }}>×</button>}
