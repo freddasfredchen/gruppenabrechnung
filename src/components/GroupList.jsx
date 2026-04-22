@@ -71,6 +71,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   };
 
   const canCreate = newName.trim() && newAdminPw.trim() && newMembers.length >= 2;
+  const visibleGroups = currentUser.isVorstand ? groups : groups.filter(g => g.members.includes(currentUser.id));
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
@@ -143,7 +144,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
       <div style={{ padding: "0 1rem 2rem" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-          <SectionLabel style={{ margin: 0 }}>{groups.length} {groups.length === 1 ? "Gruppe" : "Gruppen"}</SectionLabel>
+          <SectionLabel style={{ margin: 0 }}>{visibleGroups.length} {visibleGroups.length === 1 ? "Gruppe" : "Gruppen"}</SectionLabel>
           {!isListAdmin
             ? <button onClick={() => setShowListAdminModal(true)} style={{ padding: "5px 12px", borderRadius: "var(--radius-full)", background: "transparent", color: "var(--color-text-secondary)", border: "0.5px solid var(--color-border-secondary)", cursor: "pointer", fontSize: 12 }}>Administration</button>
             : <button onClick={() => setIsListAdmin(false)} style={{ padding: "5px 12px", borderRadius: "var(--radius-full)", background: BRAND_LT, color: "#fff", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Admin aktiv ×</button>
@@ -151,7 +152,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
         </div>
 
         <div style={{ display: "grid", gap: 10, marginBottom: "1.25rem" }}>
-          {groups.map(g => {
+          {visibleGroups.map(g => {
             const total = g.expenses.reduce((s, e) => s + e.amount, 0);
             const openTxs = computeTransactions(computeBalances(g.members, g.expenses, g.payments)).length;
             return (
