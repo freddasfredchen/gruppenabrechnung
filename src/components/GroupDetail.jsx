@@ -146,6 +146,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
   const [gpw, setGpw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
   const [apw, setApw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
+  const [confirmTx, setConfirmTx] = useState(null);
 
   const g = group;
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
@@ -245,6 +246,23 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
+      {confirmTx && (
+        <ModalWrap>
+          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 16, boxSizing: "border-box" }}>
+            <p style={{ fontWeight: 700, fontSize: 16, margin: 0, color: "var(--color-text-primary)", textAlign: "center" }}>Hast du bezahlt?</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "var(--color-background-secondary)", borderRadius: "var(--radius-sm)", fontSize: 14 }}>
+              <Avatar name={getName(confirmTx.from)} size={28} />
+              <span style={{ fontWeight: 600 }}>{getName(confirmTx.from)}</span>
+              <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>→ {getName(confirmTx.to)}</span>
+              <span style={{ fontWeight: 700 }}>{fmt(confirmTx.amt)}</span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmTx(null)} style={{ flex: 1, padding: "10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Nein</button>
+              <PrimaryBtn onClick={() => { recordPayment(confirmTx.from, confirmTx.to, confirmTx.amt); setConfirmTx(null); }} full>Ja</PrimaryBtn>
+            </div>
+          </div>
+        </ModalWrap>
+      )}
       {showAdminModal && (
         <ModalWrap>
           <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
@@ -309,7 +327,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
                       <span style={{ fontWeight: 600 }}>{getName(t.from)}</span>
                       <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>→ {getName(t.to)}</span>
                       <span style={{ fontWeight: 700, marginRight: canSettle ? 8 : 0 }}>{fmt(t.amt)}</span>
-                      {canSettle && <button onClick={() => recordPayment(t.from, t.to, t.amt)} style={{ padding: "5px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, border: `1.5px solid ${BRAND}`, background: "transparent", cursor: "pointer", color: BRAND, fontWeight: 600 }}>Tilgen</button>}
+                      {canSettle && <button onClick={() => setConfirmTx(t)} style={{ padding: "5px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, border: `1.5px solid ${BRAND}`, background: "transparent", cursor: "pointer", color: BRAND, fontWeight: 600 }}>Tilgen</button>}
                     </div>
                   );
                 })}
