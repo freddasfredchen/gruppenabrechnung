@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { sha256, BRAND, BRAND_LT, fmt, CATEGORIES } from "../constants";
 import { computeBalances, computeTransactions } from "../logic";
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
@@ -144,15 +144,14 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   const [expForm, setExpForm] = useState(emptyForm);
   const [showExpForm, setShowExpForm] = useState(false);
 
-  const [gpw, setGpw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
   const [apw, setApw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
   const [confirmTx, setConfirmTx] = useState(null);
 
   const g = group;
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
   const save = fn => { const ng = { ...g, members: [...g.members], expenses: [...g.expenses], payments: [...g.payments] }; fn(ng); onUpdate(ng); };
-  const balances = computeBalances(g.members, g.expenses, g.payments);
-  const transactions = computeTransactions(balances);
+  const balances = useMemo(() => computeBalances(g.members, g.expenses, g.payments), [g.members, g.expenses, g.payments]);
+  const transactions = useMemo(() => computeTransactions(balances), [balances]);
 
   const checkAdmin = async () => {
     setAdminLoading(true); setAdminErr(false);
@@ -179,12 +178,13 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   const canSaveExp = () => {
     const amt = parseFloat(String(expForm.amount).replace(",", "."));
     if (!expForm.desc.trim() || isNaN(amt) || amt <= 0 || !expForm.payer) return false;
+    const parts = expForm.participants.length > 0 ? expForm.participants : g.members;
     if (expForm.splitMode === "proportional") {
-      const total = g.members.reduce((s, uid) => s + (parseFloat(expForm.shares[uid]) || 0), 0);
+      const total = parts.reduce((s, uid) => s + (parseFloat(expForm.shares[uid]) || 0), 0);
       if (Math.abs(total - 100) > 0.5) return false;
     }
     if (expForm.splitMode === "exact") {
-      const total = g.members.reduce((s, uid) => s + (parseFloat(expForm.shares[uid]) || 0), 0);
+      const total = parts.reduce((s, uid) => s + (parseFloat(expForm.shares[uid]) || 0), 0);
       if (Math.abs(total - amt) > 0.01) return false;
     }
     return true;
@@ -468,8 +468,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
         {view === "passwörter" && isAdmin && (
           <div style={{ display: "grid", gap: "1.25rem", animation: "fadeIn 0.2s ease" }}>
             {[
-              { label: "Gruppenpasswort", state: gpw, setter: setGpw, hash: g.pwHash,    onSave: h => save(ng => { ng.pwHash = h; }) },
-              { label: "Adminpasswort",   state: apw, setter: setApw, hash: g.adminHash, onSave: h => save(ng => { ng.adminHash = h; }) },
+              { label: "Adminpasswort", state: apw, setter: setApw, hash: g.adminHash, onSave: h => save(ng => { ng.adminHash = h; }) },
             ].map(({ label, state, setter, hash, onSave }) => (
               <Card key={label} style={{ padding: "1.25rem" }}>
                 <SectionLabel>{label} ändern</SectionLabel>
