@@ -9,13 +9,15 @@ export default function UserManagement({ users, onAdd, onRemove, onResetPw, onCl
   const [resetting, setResetting] = useState(new Set());
   const [resetDone, setResetDone] = useState(new Set());
 
+  const toggleSet = (set, id, add) => { const n = new Set(set); add ? n.add(id) : n.delete(id); return n; };
+
   const handleReset = async (userId) => {
-    setResetting(s => new Set(s).add(userId));
+    setResetting(s => toggleSet(s, userId, true));
     const hash = await sha256("asdf");
     await onResetPw(userId, hash);
-    setResetting(s => { const n = new Set(s); n.delete(userId); return n; });
-    setResetDone(s => new Set(s).add(userId));
-    setTimeout(() => setResetDone(s => { const n = new Set(s); n.delete(userId); return n; }), 2000);
+    setResetting(s => toggleSet(s, userId, false));
+    setResetDone(s => toggleSet(s, userId, true));
+    setTimeout(() => setResetDone(s => toggleSet(s, userId, false)), 2000);
   };
 
   const create = async () => {

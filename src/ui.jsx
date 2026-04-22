@@ -1,4 +1,4 @@
-import { BRAND, COLORS_AVATAR, initials, avatarColor } from "./constants";
+import { BRAND, initials, avatarColor } from "./constants";
 
 export function Avatar({ name, size = 36 }) {
   return (

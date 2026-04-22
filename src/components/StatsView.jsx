@@ -71,16 +71,20 @@ export default function StatsView({ g, getName }) {
       <div style={{ background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", padding: "1.25rem" }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-text-secondary)", margin: "0 0 12px" }}>Ausgaben pro Person</p>
         <div style={{ display: "grid", gap: 8 }}>
-          {g.members.map(uid => {
-            const paid = g.expenses.filter(e => e.payer === uid).reduce((s, e) => s + e.amount, 0);
-            return paid > 0 ? (
+          {(() => {
+            const paidByMember = {};
+            g.expenses.forEach(e => { paidByMember[e.payer] = (paidByMember[e.payer] || 0) + e.amount; });
+            return g.members.map(uid => {
+              const paid = paidByMember[uid] || 0;
+              return paid > 0 ? (
               <div key={uid} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>{getName(uid)}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-primary)" }}>{fmt(paid)}</div>
                 <div style={{ fontSize: 11, color: "var(--color-text-secondary)", width: 36, textAlign: "right" }}>{Math.round(paid / total * 100)}%</div>
               </div>
-            ) : null;
-          })}
+              ) : null;
+            });
+          })()}
         </div>
       </div>
     </div>

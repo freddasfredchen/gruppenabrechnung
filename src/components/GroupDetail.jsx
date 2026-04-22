@@ -238,9 +238,10 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
     setter({ current: "", next: "", confirm: "", err: null, saving: false, done: true });
   };
 
-  const NavBtn = ({ k, label }) => (
-    <button onClick={() => setView(k)} style={{ padding: "7px 14px", borderRadius: "var(--radius-full)", background: view === k ? BRAND : "transparent", color: view === k ? "#fff" : "var(--color-text-secondary)", border: view === k ? "none" : "1px solid var(--color-border-secondary)", cursor: "pointer", fontSize: 13, fontWeight: view === k ? 700 : 500, transition: "all 0.15s", whiteSpace: "nowrap" }}>{label}</button>
-  );
+  const NavBtn = ({ k, label }) => {
+    const active = view === k;
+    return <button onClick={() => setView(k)} style={{ padding: "7px 14px", borderRadius: "var(--radius-full)", background: active ? BRAND : "transparent", color: active ? "#fff" : "var(--color-text-secondary)", border: active ? "none" : "1px solid var(--color-border-secondary)", cursor: "pointer", fontSize: 13, fontWeight: active ? 700 : 500, transition: "all 0.15s", whiteSpace: "nowrap" }}>{label}</button>;
+  };
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
