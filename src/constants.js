@@ -1,6 +1,5 @@
 export const SK_SESSION = "vapp_session";
 
-export const APP_PW_HASH   = import.meta.env.VITE_APP_PW_HASH;
 export const LIST_ADM_HASH = import.meta.env.VITE_LIST_ADM_HASH;
 export const VORSTAND_HASH = import.meta.env.VITE_VORSTAND_HASH;
 

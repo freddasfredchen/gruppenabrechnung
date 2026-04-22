@@ -10,16 +10,11 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newPw, setNewPw] = useState("");
   const [newAdminPw, setNewAdminPw] = useState("");
   const [newIcon, setNewIcon] = useState("♟");
   const [newColor, setNewColor] = useState(GROUP_COLORS[0]);
   const [newMembers, setNewMembers] = useState([]);
   const [creating, setCreating] = useState(false);
-
-  const [unlocking, setUnlocking] = useState(null);
-  const [pw, setPw] = useState("");
-  const [pwErr, setPwErr] = useState(false);
 
   const [isListAdmin, setIsListAdmin] = useState(false);
   const [showListAdminModal, setShowListAdminModal] = useState(false);
@@ -68,21 +63,14 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const toggleMember = uid => setNewMembers(m => m.includes(uid) ? m.filter(x => x !== uid) : [...m, uid]);
 
   const create = async () => {
-    if (!newName.trim() || !newPw.trim() || !newAdminPw.trim() || newMembers.length < 2) return;
+    if (!newName.trim() || !newAdminPw.trim() || newMembers.length < 2) return;
     setCreating(true);
-    const [pwHash, adminHash] = await Promise.all([sha256(newPw), sha256(newAdminPw)]);
-    onCreateGroup({ id: Date.now() + "", name: newName.trim(), icon: newIcon, color: newColor, pwHash, adminHash, members: newMembers, expenses: [], payments: [], creatorId: currentUser.id });
-    setNewName(""); setNewPw(""); setNewAdminPw(""); setNewIcon("♟"); setNewColor(GROUP_COLORS[0]); setNewMembers([]); setShowCreate(false); setCreating(false);
+    const adminHash = await sha256(newAdminPw);
+    onCreateGroup({ id: Date.now() + "", name: newName.trim(), icon: newIcon, color: newColor, adminHash, members: newMembers, expenses: [], payments: [], creatorId: currentUser.id });
+    setNewName(""); setNewAdminPw(""); setNewIcon("♟"); setNewColor(GROUP_COLORS[0]); setNewMembers([]); setShowCreate(false); setCreating(false);
   };
 
-  const tryUnlock = async (g) => {
-    const h = await sha256(pw);
-    if (h === g.pwHash) { onEnter(g); setUnlocking(null); setPw(""); setPwErr(false); }
-    else { setPwErr(true); setPw(""); }
-  };
-
-  const unlockGroup = groups.find(g => g.id === unlocking);
-  const canCreate = newName.trim() && newPw.trim() && newAdminPw.trim() && newMembers.length >= 2;
+  const canCreate = newName.trim() && newAdminPw.trim() && newMembers.length >= 2;
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
@@ -131,26 +119,6 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
         </ModalWrap>
       )}
 
-      {unlockGroup && (
-        <ModalWrap>
-          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 40, height: 40, borderRadius: "var(--radius-sm)", background: unlockGroup.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "#fff", flexShrink: 0 }}>{unlockGroup.icon}</div>
-              <div>
-                <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: "var(--color-text-primary)" }}>{unlockGroup.name}</p>
-                <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: 0 }}>Passwort eingeben</p>
-              </div>
-            </div>
-            <Inp type="password" placeholder="Passwort" value={pw} onChange={e => { setPw(e.target.value); setPwErr(false); }} onKeyDown={e => e.key === "Enter" && tryUnlock(unlockGroup)} autoFocus style={{ border: pwErr ? "1.5px solid var(--color-border-danger)" : undefined }} />
-            {pwErr && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-danger)", textAlign: "center" }}>Falsches Passwort</p>}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => { setUnlocking(null); setPw(""); setPwErr(false); }} style={{ flex: 1, padding: "9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
-              <PrimaryBtn onClick={() => tryUnlock(unlockGroup)} disabled={!pw} full>Öffnen</PrimaryBtn>
-            </div>
-          </div>
-        </ModalWrap>
-      )}
-
       <div style={{ background: BRAND, padding: "1.25rem 1.25rem 1rem", borderRadius: "0 0 22px 22px", marginBottom: "1.5rem" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
@@ -187,7 +155,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             const total = g.expenses.reduce((s, e) => s + e.amount, 0);
             const openTxs = computeTransactions(computeBalances(g.members, g.expenses, g.payments)).length;
             return (
-              <div key={g.id} onClick={() => !isListAdmin && setUnlocking(g.id)}
+              <div key={g.id} onClick={() => !isListAdmin && onEnter(g)}
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-sm)", cursor: isListAdmin ? "default" : "pointer" }}>
                 <div style={{ width: 46, height: 46, borderRadius: "var(--radius-sm)", background: g.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, color: "#fff" }}>{g.icon}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -213,8 +181,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
           <Card style={{ marginTop: "1rem" }}>
             <div style={{ display: "grid", gap: 14 }}>
               <div><SectionLabel>Gruppenname</SectionLabel><Inp placeholder="z.B. WG Koblenz" value={newName} onChange={e => setNewName(e.target.value)} /></div>
-              <div><SectionLabel>Gruppenpasswort</SectionLabel><Inp type="password" placeholder="Passwort für alle Mitglieder" value={newPw} onChange={e => setNewPw(e.target.value)} /></div>
-              <div><SectionLabel>Adminpasswort</SectionLabel><Inp type="password" placeholder="Separates Passwort für Admins" value={newAdminPw} onChange={e => setNewAdminPw(e.target.value)} /></div>
+              <div><SectionLabel>Adminpasswort</SectionLabel><Inp type="password" placeholder="Passwort für Gruppenadmins" value={newAdminPw} onChange={e => setNewAdminPw(e.target.value)} /></div>
               <div>
                 <SectionLabel>Mitglieder wählen <span style={{ textTransform: "none", fontWeight: 400, letterSpacing: 0, opacity: 0.6 }}>(min. 2)</span></SectionLabel>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

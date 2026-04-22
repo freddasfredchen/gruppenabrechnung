@@ -2,13 +2,11 @@ import { useState, useEffect } from "react";
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { SK_SESSION, VORSTAND_USER } from "./constants";
-import AppLoginScreen from "./components/AppLoginScreen";
 import UserLoginScreen from "./components/UserLoginScreen";
 import GroupList from "./components/GroupList";
 import GroupDetail from "./components/GroupDetail";
 
 export default function App() {
-  const [appAuthed, setAppAuthed] = useState(() => sessionStorage.getItem("vapp_appauth") === "1");
   const [currentUser, setCurrentUser] = useState(() => {
     const s = sessionStorage.getItem(SK_SESSION); return s ? JSON.parse(s) : null;
   });
@@ -47,7 +45,6 @@ export default function App() {
     login(updated);
   };
 
-  if (!appAuthed) return <AppLoginScreen onSuccess={() => { sessionStorage.setItem("vapp_appauth", "1"); setAppAuthed(true); }} />;
   if (!loaded) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-sans)", color: "var(--color-text-secondary)" }}>Lade...</div>;
   if (!currentUser) return <UserLoginScreen users={users} onLogin={login} />;
 
