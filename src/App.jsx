@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { SK_SESSION, VORSTAND_USER } from "./constants";
+import { computeCrossGroupNetting } from "./logic";
 import UserLoginScreen from "./components/UserLoginScreen";
 import GroupList from "./components/GroupList";
 import GroupDetail from "./components/GroupDetail";
@@ -48,9 +49,17 @@ export default function App() {
   if (!loaded) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-sans)", color: "var(--color-text-secondary)" }}>Lade...</div>;
   if (!currentUser) return <UserLoginScreen users={users} onLogin={login} />;
 
+  const handleGroupUpdate = async (updatedGroup) => {
+    await setDoc(doc(db, "groups", updatedGroup.id), updatedGroup);
+    const allGroups = groups.map(g => g.id === updatedGroup.id ? updatedGroup : g);
+    for (const ng of computeCrossGroupNetting(allGroups)) {
+      await setDoc(doc(db, "groups", ng.id), ng);
+    }
+  };
+
   if (activeGroup) {
     const current = groups.find(g => g.id === activeGroup.id) || activeGroup;
-    return <GroupDetail group={current} allUsers={allUsers} onUpdate={ng => setDoc(doc(db, "groups", ng.id), ng)} onBack={() => setActiveGroup(null)} currentUser={currentUser} />;
+    return <GroupDetail group={current} allUsers={allUsers} onUpdate={handleGroupUpdate} onBack={() => setActiveGroup(null)} currentUser={currentUser} />;
   }
   return <GroupList groups={groups} users={users} currentUser={currentUser} onEnter={setActiveGroup} onCreateGroup={handleCreate} onDeleteGroup={handleDelete} onLogout={logout} onUpdateUserPw={handleUpdateUserPw} />;
 }

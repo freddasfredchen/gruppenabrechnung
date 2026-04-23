@@ -442,7 +442,9 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontWeight: 600 }}>{getName(p.from)}</span>
                       <span style={{ color: "var(--color-text-secondary)" }}> → {getName(p.to)}</span>
-                      <span style={{ display: "block", fontSize: 11, color: "var(--color-text-tertiary)" }}>{p.date}{p.recordedBy && p.recordedBy !== p.from ? ` · eingetragen von ${getName(p.recordedBy)}` : ""}</span>
+                      <span style={{ display: "block", fontSize: 11, color: p.type === "netting" ? "var(--color-text-success)" : "var(--color-text-link, #3B82F6)" }}>
+                        {p.date}{p.type === "netting" ? " · Durch Verrechnung getilgt" : ` · Durch Zahlung getilgt${p.recordedBy && p.recordedBy !== p.from ? ` (${getName(p.recordedBy)})` : ""}`}
+                      </span>
                     </div>
                     <span style={{ fontWeight: 700, color: "var(--color-text-success)", marginRight: isAdmin ? 8 : 0 }}>{fmt(p.amount)}</span>
                     {isAdmin && <button onClick={() => removePayment(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 18, lineHeight: 1, padding: "0 2px", fontWeight: 700 }}>×</button>}

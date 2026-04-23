@@ -31,6 +31,47 @@ export function computeBalances(members, expenses, payments) {
   return bal;
 }
 
+export function computeCrossGroupNetting(groups) {
+  const date = new Date().toLocaleDateString("de-DE");
+  const groupTxs = groups.map(g => ({
+    id: g.id,
+    txs: computeTransactions(computeBalances(g.members, g.expenses, g.payments))
+  }));
+
+  const remaining = {};
+  groupTxs.forEach(({ id, txs }) => txs.forEach((tx, idx) => { remaining[`${id}-${idx}`] = tx.amt; }));
+
+  const added = {};
+  groups.forEach(g => { added[g.id] = []; });
+
+  for (let i = 0; i < groupTxs.length; i++) {
+    for (let ti = 0; ti < groupTxs[i].txs.length; ti++) {
+      const tx1 = groupTxs[i].txs[ti];
+      const k1 = `${groupTxs[i].id}-${ti}`;
+      if (remaining[k1] <= 0.005) continue;
+      for (let j = i + 1; j < groupTxs.length; j++) {
+        for (let tj = 0; tj < groupTxs[j].txs.length; tj++) {
+          const tx2 = groupTxs[j].txs[tj];
+          const k2 = `${groupTxs[j].id}-${tj}`;
+          if (remaining[k2] <= 0.005) continue;
+          if (tx1.from === tx2.to && tx1.to === tx2.from) {
+            const amt = Math.min(remaining[k1], remaining[k2]);
+            if (amt > 0.005) {
+              remaining[k1] -= amt;
+              remaining[k2] -= amt;
+              const mkId = () => `netting-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+              added[groupTxs[i].id].push({ id: mkId(), from: tx1.from, to: tx1.to, amount: amt, date, type: "netting" });
+              added[groupTxs[j].id].push({ id: mkId(), from: tx2.from, to: tx2.to, amount: amt, date, type: "netting" });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return groups.filter(g => added[g.id].length > 0).map(g => ({ ...g, payments: [...g.payments, ...added[g.id]] }));
+}
+
 export function computeTransactions(balances) {
   const d = [], c = [];
   Object.entries(balances).forEach(([id, v]) => {
