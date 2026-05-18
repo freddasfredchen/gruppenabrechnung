@@ -171,6 +171,12 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   const [apw, setApw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
   const [confirmTx, setConfirmTx] = useState(null);
 
+  const g = group;
+  const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
+  const save = fn => { const ng = { ...g, members: [...g.members], expenses: [...g.expenses], payments: [...g.payments], recurringExpenses: [...(g.recurringExpenses || [])] }; fn(ng); onUpdate(ng); };
+  const balances = useMemo(() => computeBalances(g.members, g.expenses, g.payments), [g.members, g.expenses, g.payments]);
+  const transactions = useMemo(() => computeTransactions(balances), [balances]);
+
   const emptyRecForm = { desc: "", amount: "", payer: "", participants: [], category: "other", dayOfMonth: "1" };
   const [recForm, setRecForm] = useState(emptyRecForm);
   const [showRecForm, setShowRecForm] = useState(false);
@@ -232,12 +238,6 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
       }
     });
   };
-
-  const g = group;
-  const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
-  const save = fn => { const ng = { ...g, members: [...g.members], expenses: [...g.expenses], payments: [...g.payments], recurringExpenses: [...(g.recurringExpenses || [])] }; fn(ng); onUpdate(ng); };
-  const balances = useMemo(() => computeBalances(g.members, g.expenses, g.payments), [g.members, g.expenses, g.payments]);
-  const transactions = useMemo(() => computeTransactions(balances), [balances]);
 
   const checkAdmin = async () => {
     setAdminLoading(true); setAdminErr(false);
