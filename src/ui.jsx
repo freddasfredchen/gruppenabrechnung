@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { BRAND, initials, avatarColor } from "./constants";
 
 export function Avatar({ name, size = 36 }) {
@@ -22,9 +23,9 @@ export function PrimaryBtn({ onClick, disabled, children, full = false }) {
   );
 }
 
-export function Inp({ style = {}, ...props }) {
-  return <input {...props} style={{ padding: "10px 14px", borderRadius: "var(--radius-sm)", border: "1.5px solid var(--color-border-secondary)", background: "var(--color-background-secondary)", color: "var(--color-text-primary)", fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box", transition: "border-color 0.15s", fontFamily: "var(--font-sans)", ...style }} />;
-}
+export const Inp = forwardRef(function Inp({ style = {}, ...props }, ref) {
+  return <input ref={ref} {...props} style={{ padding: "10px 14px", borderRadius: "var(--radius-sm)", border: "1.5px solid var(--color-border-secondary)", background: "var(--color-background-secondary)", color: "var(--color-text-primary)", fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box", transition: "border-color 0.15s", fontFamily: "var(--font-sans)", ...style }} />;
+});
 
 export function SectionLabel({ children, style = {} }) {
   return <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: BRAND, margin: "0 0 10px", opacity: 0.85, ...style }}>{children}</p>;
