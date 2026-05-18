@@ -132,6 +132,30 @@ const SPLIT_MODES = [
   { id: "exact",        label: "Exakt" },
 ];
 
+function getRecurringOccurrences(r) {
+  const today = new Date();
+  const day = Math.min(r.dayOfMonth || 1, 28);
+  const results = [];
+  let year, month;
+  if (!r.lastProcessed) {
+    year = today.getFullYear();
+    month = today.getMonth();
+  } else {
+    const [mm, yyyy] = r.lastProcessed.split(".");
+    month = parseInt(mm) - 1 + 1;
+    year = parseInt(yyyy);
+    if (month > 11) { month = 0; year++; }
+  }
+  while (true) {
+    const trigger = new Date(year, month, day);
+    if (trigger > today) break;
+    results.push(trigger);
+    month++;
+    if (month > 11) { month = 0; year++; }
+  }
+  return results;
+}
+
 export default function GroupDetail({ group, allUsers, onUpdate, onBack, currentUser }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -147,9 +171,71 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   const [apw, setApw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
   const [confirmTx, setConfirmTx] = useState(null);
 
+  const emptyRecForm = { desc: "", amount: "", payer: "", participants: [], category: "other", dayOfMonth: "1" };
+  const [recForm, setRecForm] = useState(emptyRecForm);
+  const [showRecForm, setShowRecForm] = useState(false);
+
+  const pendingRecurring = useMemo(
+    () => (g.recurringExpenses || []).filter(r => r.active && getRecurringOccurrences(r).length > 0),
+    [g.recurringExpenses]
+  );
+
+  const canSaveRec = () => {
+    const amt = parseFloat(String(recForm.amount).replace(",", "."));
+    return recForm.desc.trim() && !isNaN(amt) && amt > 0 && recForm.payer && parseInt(recForm.dayOfMonth) >= 1 && parseInt(recForm.dayOfMonth) <= 28;
+  };
+
+  const addRecurring = () => {
+    if (!canSaveRec()) return;
+    const amt = parseFloat(String(recForm.amount).replace(",", "."));
+    save(ng => {
+      ng.recurringExpenses.push({
+        id: Date.now() + "",
+        desc: recForm.desc.trim(),
+        amount: amt,
+        payer: recForm.payer,
+        category: recForm.category,
+        participants: recForm.participants,
+        dayOfMonth: parseInt(recForm.dayOfMonth),
+        lastProcessed: null,
+        active: true,
+        createdBy: currentUser.id,
+      });
+    });
+    setRecForm(emptyRecForm);
+    setShowRecForm(false);
+  };
+
+  const removeRecurring = id => save(ng => { ng.recurringExpenses = ng.recurringExpenses.filter(r => r.id !== id); });
+
+  const processRecurring = () => {
+    if (pendingRecurring.length === 0) return;
+    const today = new Date();
+    const currentMY = `${String(today.getMonth() + 1).padStart(2, "0")}.${today.getFullYear()}`;
+    save(ng => {
+      for (const r of pendingRecurring) {
+        for (const date of getRecurringOccurrences(r)) {
+          ng.expenses.push({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            desc: r.desc,
+            amount: r.amount,
+            payer: r.payer,
+            category: r.category,
+            participants: r.participants || [],
+            splitMode: "equal",
+            shares: {},
+            date: date.toLocaleDateString("de-DE"),
+          });
+        }
+        const idx = ng.recurringExpenses.findIndex(x => x.id === r.id);
+        if (idx !== -1) ng.recurringExpenses[idx] = { ...ng.recurringExpenses[idx], lastProcessed: currentMY };
+      }
+    });
+  };
+
   const g = group;
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
-  const save = fn => { const ng = { ...g, members: [...g.members], expenses: [...g.expenses], payments: [...g.payments] }; fn(ng); onUpdate(ng); };
+  const save = fn => { const ng = { ...g, members: [...g.members], expenses: [...g.expenses], payments: [...g.payments], recurringExpenses: [...(g.recurringExpenses || [])] }; fn(ng); onUpdate(ng); };
   const balances = useMemo(() => computeBalances(g.members, g.expenses, g.payments), [g.members, g.expenses, g.payments]);
   const transactions = useMemo(() => computeTransactions(balances), [balances]);
 
@@ -293,6 +379,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
           <NavBtn k="salden" label="Salden" />
           <NavBtn k="ausgaben" label="Ausgaben" />
           <NavBtn k="zahlungen" label="Zahlungen" />
+          <NavBtn k="dauerauftraege" label={`Daueraufträge${pendingRecurring.length > 0 ? ` (${pendingRecurring.length})` : ""}`} />
           <NavBtn k="statistiken" label="Statistiken" />
           <NavBtn k="mitglieder" label="Mitglieder" />
           {!isAdmin
@@ -452,6 +539,108 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
                 ))}
               </div>
             </>}
+          </div>
+        )}
+
+        {view === "dauerauftraege" && (
+          <div style={{ animation: "fadeIn 0.2s ease" }}>
+            {pendingRecurring.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: "var(--radius)", background: "var(--brand-a10)", border: `1.5px solid ${BRAND}`, marginBottom: "1rem" }}>
+                <span style={{ flex: 1, fontSize: 14, color: BRAND, fontWeight: 600 }}>
+                  {pendingRecurring.length === 1 ? "1 Dauerauftrag" : `${pendingRecurring.length} Daueraufträge`} fällig
+                </span>
+                <PrimaryBtn onClick={processRecurring}>Jetzt verbuchen</PrimaryBtn>
+              </div>
+            )}
+
+            <div style={{ marginBottom: "1rem" }}>
+              <button onClick={() => setShowRecForm(v => !v)} style={{ padding: "8px 18px", borderRadius: "var(--radius-sm)", border: `1.5px solid ${BRAND}`, background: showRecForm ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+                {showRecForm ? "Abbrechen" : "+ Dauerauftrag hinzufügen"}
+              </button>
+            </div>
+
+            {showRecForm && (
+              <Card style={{ padding: "1.25rem", marginBottom: "1rem" }}>
+                <div style={{ display: "grid", gap: 14 }}>
+                  <Inp placeholder="Beschreibung" value={recForm.desc} onChange={e => setRecForm(f => ({ ...f, desc: e.target.value }))} />
+                  <Inp placeholder="Betrag (€)" type="number" value={recForm.amount} onChange={e => setRecForm(f => ({ ...f, amount: e.target.value }))} />
+
+                  <div>
+                    <SectionLabel>Fällig am Tag des Monats</SectionLabel>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Inp type="number" min="1" max="28" value={recForm.dayOfMonth} onChange={e => setRecForm(f => ({ ...f, dayOfMonth: e.target.value }))} style={{ width: 70 }} />
+                      <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>des Monats (1–28)</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel>Kategorie</SectionLabel>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {CATEGORIES.map(c => (
+                        <button key={c.id} onClick={() => setRecForm(f => ({ ...f, category: c.id }))} style={{ padding: "5px 11px", borderRadius: "var(--radius-full)", fontSize: 12, fontWeight: 600, cursor: "pointer", border: recForm.category === c.id ? `2px solid ${c.color}` : "1.5px solid var(--color-border-secondary)", background: recForm.category === c.id ? c.color + "22" : "transparent", color: recForm.category === c.id ? c.color : "var(--color-text-secondary)", transition: "all 0.15s" }}>
+                          {c.icon} {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel>Bezahlt von</SectionLabel>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {g.members.map(uid => <ToggleBtn key={uid} active={recForm.payer === uid} onClick={() => setRecForm(f => ({ ...f, payer: f.payer === uid ? "" : uid }))}>{getName(uid)}</ToggleBtn>)}
+                    </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel>Aufgeteilt unter <span style={{ textTransform: "none", fontWeight: 400, letterSpacing: 0, opacity: 0.6 }}>(leer = alle)</span></SectionLabel>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {g.members.map(uid => (
+                        <ToggleBtn key={uid} active={recForm.participants.includes(uid)} onClick={() => setRecForm(f => ({ ...f, participants: f.participants.includes(uid) ? f.participants.filter(p => p !== uid) : [...f.participants, uid] }))}>
+                          {getName(uid)}
+                        </ToggleBtn>
+                      ))}
+                    </div>
+                  </div>
+
+                  <PrimaryBtn onClick={addRecurring} disabled={!canSaveRec()} full>Dauerauftrag anlegen</PrimaryBtn>
+                </div>
+              </Card>
+            )}
+
+            {(g.recurringExpenses || []).length === 0 && !showRecForm && (
+              <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Keine Daueraufträge eingerichtet.</p>
+            )}
+
+            <div style={{ display: "grid", gap: 8 }}>
+              {(g.recurringExpenses || []).map(r => {
+                const pending = getRecurringOccurrences(r).length > 0;
+                return (
+                  <div key={r.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "13px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)", borderLeft: pending ? `3px solid ${BRAND}` : undefined }}>
+                    <Avatar name={getName(r.payer)} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: 15 }}>{r.desc}</p>
+                        <CategoryBadge categoryId={r.category} />
+                        {pending && <span style={{ fontSize: 11, fontWeight: 700, color: BRAND }}>FÄLLIG</span>}
+                      </div>
+                      <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-secondary)" }}>
+                        {getName(r.payer)} · am {r.dayOfMonth}. des Monats
+                      </p>
+                      <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--color-text-tertiary)" }}>
+                        {r.participants?.length > 0 ? r.participants.map(uid => getName(uid)).join(", ") : "Alle Mitglieder"}
+                      </p>
+                      <p style={{ margin: "2px 0 0", fontSize: 11, color: r.lastProcessed ? "var(--color-text-success)" : "var(--color-text-secondary)" }}>
+                        {r.lastProcessed ? `Zuletzt verbucht: ${r.lastProcessed}` : "Noch nicht ausgeführt"}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                      <span style={{ fontWeight: 700, fontSize: 15 }}>{fmt(r.amount)}</span>
+                      <button onClick={() => removeRecurring(r.id)} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 18, lineHeight: 1, padding: "0 2px", fontWeight: 700 }}>×</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
