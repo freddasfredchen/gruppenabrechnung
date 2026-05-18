@@ -9,6 +9,7 @@ export default function UserLoginScreen({ users, onLogin }) {
   const [err, setErr] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const pwRef = useRef(null);
 
   const allUsers = [VORSTAND_USER, ...users];
@@ -30,9 +31,27 @@ export default function UserLoginScreen({ users, onLogin }) {
     const val = e.target.value;
     setNameInput(val);
     setShowSuggestions(true);
+    setHighlightedIndex(-1);
     const exact = allUsers.find(u => u.name.toLowerCase() === val.toLowerCase());
     setSelected(exact || null);
     setErr(false);
+  };
+
+  const handleNameKeyDown = e => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex(i => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex(i => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      selectUser(suggestions[highlightedIndex]);
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+    }
   };
 
   const check = async () => {
@@ -57,20 +76,19 @@ export default function UserLoginScreen({ users, onLogin }) {
               placeholder="Name"
               value={nameInput}
               onChange={handleNameChange}
+              onKeyDown={handleNameKeyDown}
               onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onBlur={() => setTimeout(() => { setShowSuggestions(false); setHighlightedIndex(-1); }, 150)}
               autoFocus
               autoComplete="off"
             />
             {showSuggestions && suggestions.length > 0 && (
               <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10, background: "var(--color-background-primary)", border: "1px solid var(--color-border-secondary)", borderRadius: "var(--radius-sm)", boxShadow: "var(--shadow-hover)", marginTop: 4, overflow: "hidden" }}>
-                {suggestions.map(u => (
-                  <div key={u.id} onMouseDown={() => selectUser(u)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer", transition: "background 0.1s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "var(--color-background-secondary)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                {suggestions.map((u, i) => (
+                  <div key={u.id} onMouseDown={() => selectUser(u)} onMouseEnter={() => setHighlightedIndex(i)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer", background: i === highlightedIndex ? "var(--brand-a10)" : "transparent", transition: "background 0.1s" }}>
                     <Avatar name={u.name} size={28} />
-                    <span style={{ fontSize: 14, fontWeight: 500 }}>{u.name}</span>
+                    <span style={{ fontSize: 14, fontWeight: i === highlightedIndex ? 700 : 500 }}>{u.name}</span>
                     {u.isVorstand && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--radius-full)", background: "var(--brand-a15)", color: BRAND }}>VORSTAND</span>}
                   </div>
                 ))}
