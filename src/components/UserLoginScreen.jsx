@@ -3,8 +3,11 @@ import { sha256, BRAND, VORSTAND_USER } from "../constants";
 import { Card, Inp, PrimaryBtn, Avatar } from "../ui";
 
 export default function UserLoginScreen({ users, onLogin }) {
-  const [nameInput, setNameInput] = useState("");
-  const [selected, setSelected] = useState(null);
+  const [nameInput, setNameInput] = useState(() => localStorage.getItem("vapp_last_user") || "");
+  const [selected, setSelected] = useState(() => {
+    const last = localStorage.getItem("vapp_last_user");
+    return last ? ([VORSTAND_USER, ...users].find(u => u.name === last) || null) : null;
+  });
   const [pw, setPw] = useState("");
   const [err, setErr] = useState(false);
   const [loading, setLoading] = useState(false);

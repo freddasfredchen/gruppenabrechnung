@@ -35,7 +35,7 @@ export default function App() {
     if (user) await setDoc(doc(db, "users", user.id), user);
   };
 
-  const login = user => { sessionStorage.setItem(SK_SESSION, JSON.stringify(user)); setCurrentUser(user); };
+  const login = user => { sessionStorage.setItem(SK_SESSION, JSON.stringify(user)); localStorage.setItem("vapp_last_user", user.name); setCurrentUser(user); };
   const logout = () => { sessionStorage.removeItem(SK_SESSION); setCurrentUser(null); };
 
   const handleUpdateUserPw = async (userId, newPwHash) => {
