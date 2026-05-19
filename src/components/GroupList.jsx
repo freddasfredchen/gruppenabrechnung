@@ -8,6 +8,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const allUsers = [VORSTAND_USER, ...users];
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
 
+  const [mainView, setMainView] = useState("gruppen");
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newAdminPw, setNewAdminPw] = useState("");
@@ -150,48 +151,63 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
       </div>
 
       <div style={{ padding: "0 1rem 2rem" }}>
-        {hasPersonalData && (
-          <Card style={{ padding: "1.25rem", marginBottom: "1.5rem" }}>
-            <SectionLabel style={{ marginTop: 0 }}>Meine Bilanz</SectionLabel>
-            <div style={{ display: "flex", gap: 10, marginBottom: owedToMeList.length + iOweList.length > 0 ? "1rem" : 0 }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: "1.5rem" }}>
+          {["gruppen", "bilanz"].map(k => (
+            <button key={k} onClick={() => setMainView(k)} style={{ padding: "7px 18px", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: mainView === k ? 700 : 500, cursor: "pointer", border: mainView === k ? "none" : "1px solid var(--color-border-secondary)", background: mainView === k ? BRAND : "transparent", color: mainView === k ? "#fff" : "var(--color-text-secondary)", transition: "all 0.15s" }}>
+              {k === "gruppen" ? "Gruppen" : "Meine Bilanz"}
+            </button>
+          ))}
+        </div>
+
+        {mainView === "bilanz" && (
+          <div style={{ animation: "fadeIn 0.2s ease" }}>
+            {!hasPersonalData && <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Keine offenen Beträge.</p>}
+            <div style={{ display: "flex", gap: 10, marginBottom: hasPersonalData ? "1.25rem" : 0 }}>
               {totalOwedToMe > 0.005 && (
-                <div style={{ flex: 1, padding: "10px 14px", borderRadius: "var(--radius-sm)", background: "var(--color-background-secondary)", textAlign: "center" }}>
+                <div style={{ flex: 1, padding: "14px", borderRadius: "var(--radius)", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", textAlign: "center" }}>
                   <p style={{ margin: 0, fontSize: 11, color: "var(--color-text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Ich bekomme</p>
-                  <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 800, color: "var(--color-text-success)" }}>{fmt(totalOwedToMe)}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 22, fontWeight: 800, color: "var(--color-text-success)" }}>{fmt(totalOwedToMe)}</p>
                 </div>
               )}
               {totalIOwe > 0.005 && (
-                <div style={{ flex: 1, padding: "10px 14px", borderRadius: "var(--radius-sm)", background: "var(--color-background-secondary)", textAlign: "center" }}>
+                <div style={{ flex: 1, padding: "14px", borderRadius: "var(--radius)", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", textAlign: "center" }}>
                   <p style={{ margin: 0, fontSize: 11, color: "var(--color-text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Ich schulde</p>
-                  <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 800, color: "var(--color-text-danger)" }}>{fmt(totalIOwe)}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 22, fontWeight: 800, color: "var(--color-text-danger)" }}>{fmt(totalIOwe)}</p>
                 </div>
               )}
             </div>
             {owedToMeList.length > 0 && (
-              <div style={{ display: "grid", gap: 6, marginBottom: iOweList.length > 0 ? "0.75rem" : 0 }}>
-                {owedToMeList.map(([uid, amt]) => (
-                  <div key={uid} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <Avatar name={getName(uid)} size={28} />
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{getName(uid)}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-success)" }}>+{fmt(amt)}</span>
-                  </div>
-                ))}
+              <div style={{ marginBottom: iOweList.length > 0 ? "1.25rem" : 0 }}>
+                <SectionLabel>Bekomme ich</SectionLabel>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {owedToMeList.map(([uid, amt]) => (
+                    <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)" }}>
+                      <Avatar name={getName(uid)} />
+                      <span style={{ flex: 1, fontWeight: 600, fontSize: 15 }}>{getName(uid)}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-success)" }}>+{fmt(amt)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             {iOweList.length > 0 && (
-              <div style={{ display: "grid", gap: 6 }}>
-                {iOweList.map(([uid, amt]) => (
-                  <div key={uid} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <Avatar name={getName(uid)} size={28} />
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{getName(uid)}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-danger)" }}>-{fmt(amt)}</span>
-                  </div>
-                ))}
+              <div>
+                <SectionLabel>Schulde ich</SectionLabel>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {iOweList.map(([uid, amt]) => (
+                    <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)" }}>
+                      <Avatar name={getName(uid)} />
+                      <span style={{ flex: 1, fontWeight: 600, fontSize: 15 }}>{getName(uid)}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-danger)" }}>-{fmt(amt)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-          </Card>
+          </div>
         )}
 
+        {mainView === "gruppen" && <>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
           <SectionLabel style={{ margin: 0 }}>{visibleGroups.length} {visibleGroups.length === 1 ? "Gruppe" : "Gruppen"}</SectionLabel>
           {!isListAdmin
@@ -255,6 +271,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             </div>
           </Card>
         )}
+        </>}
       </div>
     </div>
   );
