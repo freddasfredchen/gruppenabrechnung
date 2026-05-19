@@ -177,6 +177,9 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   const balances = useMemo(() => computeBalances(g.members, g.expenses, g.payments), [g.members, g.expenses, g.payments]);
   const transactions = useMemo(() => computeTransactions(balances), [balances]);
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+
   const emptyRecForm = { desc: "", amount: "", payer: "", participants: [], category: "other", dayOfMonth: "1" };
   const [recForm, setRecForm] = useState(emptyRecForm);
   const [showRecForm, setShowRecForm] = useState(false);
@@ -367,8 +370,28 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", fontSize: 13, padding: "0 0 10px", display: "flex", alignItems: "center", gap: 4 }}>← Alle Gruppen</button>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ width: 44, height: 44, borderRadius: "var(--radius-sm)", background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", flexShrink: 0 }}>{g.icon}</div>
-          <div>
-            <p style={{ fontWeight: 800, fontSize: 18, margin: 0, color: "#fff", letterSpacing: "-0.02em" }}>{g.name}</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {isAdmin && editingName ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && nameInput.trim()) { save(ng => { ng.name = nameInput.trim(); }); setEditingName(false); }
+                    if (e.key === "Escape") setEditingName(false);
+                  }}
+                  autoFocus
+                  style={{ flex: 1, fontWeight: 800, fontSize: 18, background: "rgba(255,255,255,0.2)", border: "none", borderBottom: "2px solid rgba(255,255,255,0.8)", color: "#fff", outline: "none", padding: "2px 4px", borderRadius: 0, letterSpacing: "-0.02em", minWidth: 0 }}
+                />
+                <button onClick={() => { if (nameInput.trim()) { save(ng => { ng.name = nameInput.trim(); }); } setEditingName(false); }} style={{ background: "rgba(255,255,255,0.25)", border: "none", borderRadius: "var(--radius-sm)", color: "#fff", fontSize: 12, fontWeight: 700, padding: "4px 10px", cursor: "pointer" }}>✓</button>
+                <button onClick={() => setEditingName(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", fontSize: 16, cursor: "pointer", padding: "4px" }}>✕</button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <p style={{ fontWeight: 800, fontSize: 18, margin: 0, color: "#fff", letterSpacing: "-0.02em" }}>{g.name}</p>
+                {isAdmin && <button onClick={() => { setNameInput(g.name); setEditingName(true); }} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: "var(--radius-sm)", color: "#fff", fontSize: 11, padding: "3px 8px", cursor: "pointer", fontWeight: 600 }}>✎</button>}
+              </div>
+            )}
             <p style={{ fontSize: 12, margin: "2px 0 0", color: "rgba(255,255,255,0.65)" }}>{g.members.length} Mitglieder · {g.expenses.length} Ausgaben · {g.payments.length} Zahlungen</p>
           </div>
         </div>
