@@ -245,8 +245,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
                     <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)" }}>
                       <Avatar name={getName(uid)} />
                       <span style={{ flex: 1, fontWeight: 600, fontSize: 15 }}>{getName(uid)}</span>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-success)", marginRight: 8 }}>+{fmt(amt)}</span>
-                      <button onClick={() => openTilgen(uid, currentUser.id, amt)} style={{ padding: "5px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, border: `1.5px solid ${BRAND}`, background: "transparent", cursor: "pointer", color: BRAND, fontWeight: 600 }}>Tilgen</button>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-success)" }}>+{fmt(amt)}</span>
                     </div>
                   ))}
                 </div>
