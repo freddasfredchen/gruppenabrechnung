@@ -61,5 +61,5 @@ export default function App() {
     const current = groups.find(g => g.id === activeGroup.id) || activeGroup;
     return <GroupDetail group={current} allUsers={allUsers} onUpdate={handleGroupUpdate} onBack={() => setActiveGroup(null)} currentUser={currentUser} />;
   }
-  return <GroupList groups={groups} users={users} currentUser={currentUser} onEnter={setActiveGroup} onCreateGroup={handleCreate} onDeleteGroup={handleDelete} onLogout={logout} onUpdateUserPw={handleUpdateUserPw} />;
+  return <GroupList groups={groups} users={users} currentUser={currentUser} onEnter={setActiveGroup} onCreateGroup={handleCreate} onDeleteGroup={handleDelete} onLogout={logout} onUpdateUserPw={handleUpdateUserPw} onUpdateGroup={handleGroupUpdate} />;
 }

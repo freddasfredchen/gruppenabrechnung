@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { sha256, BRAND, BRAND_LT, SILVER, GROUP_ICONS, GROUP_COLORS, VORSTAND_USER, LIST_ADM_HASH, fmt } from "../constants";
-import { computeBalances, computeTransactions, computePersonalSummary } from "../logic";
+import { computeBalances, computeTransactions, computePersonalSummary, getDebtGroups } from "../logic";
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
 import UserManagement from "./UserManagement";
 
-export default function GroupList({ groups, users, currentUser, onEnter, onCreateGroup, onDeleteGroup, onLogout, onUpdateUserPw }) {
+export default function GroupList({ groups, users, currentUser, onEnter, onCreateGroup, onDeleteGroup, onLogout, onUpdateUserPw, onUpdateGroup }) {
   const allUsers = [VORSTAND_USER, ...users];
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
 
   const [mainView, setMainView] = useState("gruppen");
+  const [tilgenModal, setTilgenModal] = useState(null); // { fromId, toId, maxAmt }
+  const [tilgenAmt, setTilgenAmt] = useState("");
+  const [tilgenLoading, setTilgenLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newAdminPw, setNewAdminPw] = useState("");
@@ -71,6 +74,36 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
     setNewName(""); setNewAdminPw(""); setNewIcon("♟"); setNewColor(GROUP_COLORS[0]); setNewMembers([]); setShowCreate(false); setCreating(false);
   };
 
+  const openTilgen = (fromId, toId, maxAmt) => {
+    setTilgenModal({ fromId, toId, maxAmt });
+    setTilgenAmt(maxAmt.toFixed(2).replace(".", ","));
+  };
+
+  const confirmTilgen = async () => {
+    if (!tilgenModal) return;
+    const amt = parseFloat(String(tilgenAmt).replace(",", "."));
+    if (isNaN(amt) || amt <= 0) return;
+    setTilgenLoading(true);
+    const { fromId, toId } = tilgenModal;
+    const debtGroups = getDebtGroups(visibleGroups, fromId, toId);
+    let remaining = amt;
+    for (const { group, amt: groupAmt } of debtGroups) {
+      if (remaining <= 0.005) break;
+      const payAmt = Math.min(remaining, groupAmt);
+      remaining -= payAmt;
+      const updated = {
+        ...group,
+        members: [...group.members],
+        expenses: [...group.expenses],
+        recurringExpenses: [...(group.recurringExpenses || [])],
+        payments: [...group.payments, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, from: fromId, to: toId, amount: payAmt, date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }],
+      };
+      await onUpdateGroup(updated);
+    }
+    setTilgenLoading(false);
+    setTilgenModal(null);
+  };
+
   const canCreate = newName.trim() && newAdminPw.trim() && newMembers.length >= 2;
   const visibleGroups = currentUser.isVorstand ? groups : groups.filter(g => g.members.includes(currentUser.id));
 
@@ -83,6 +116,34 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
+      {tilgenModal && (
+        <ModalWrap>
+          <div style={{ width: "100%", maxWidth: 300, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+            <p style={{ fontWeight: 700, fontSize: 16, margin: 0, color: "var(--color-text-primary)", textAlign: "center" }}>Schulden tilgen</p>
+            <div style={{ padding: "10px 14px", background: "var(--color-background-secondary)", borderRadius: "var(--radius-sm)", fontSize: 14, display: "flex", alignItems: "center", gap: 10 }}>
+              <Avatar name={getName(tilgenModal.fromId)} size={28} />
+              <span style={{ fontWeight: 600 }}>{getName(tilgenModal.fromId)}</span>
+              <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>→ {getName(tilgenModal.toId)}</span>
+              <span style={{ fontWeight: 700 }}>{fmt(tilgenModal.maxAmt)}</span>
+            </div>
+            <div>
+              <p style={{ margin: "0 0 6px", fontSize: 12, color: "var(--color-text-secondary)" }}>Betrag (max. {fmt(tilgenModal.maxAmt)})</p>
+              <Inp
+                type="number" min="0.01" step="0.01"
+                value={tilgenAmt}
+                onChange={e => setTilgenAmt(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && confirmTilgen()}
+                autoFocus
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setTilgenModal(null)} style={{ flex: 1, padding: "10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Abbrechen</button>
+              <PrimaryBtn onClick={confirmTilgen} disabled={tilgenLoading || !tilgenAmt} full>{tilgenLoading ? "…" : "Tilgen"}</PrimaryBtn>
+            </div>
+          </div>
+        </ModalWrap>
+      )}
+
       {showUserMgmt && currentUser.isVorstand && (
         <UserManagement users={users} onAdd={u => onCreateGroup(null, u)} onRemove={id => onDeleteGroup(null, id)} onResetPw={onUpdateUserPw} onClose={() => setShowUserMgmt(false)} />
       )}
@@ -184,7 +245,8 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
                     <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)" }}>
                       <Avatar name={getName(uid)} />
                       <span style={{ flex: 1, fontWeight: 600, fontSize: 15 }}>{getName(uid)}</span>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-success)" }}>+{fmt(amt)}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-success)", marginRight: 8 }}>+{fmt(amt)}</span>
+                      <button onClick={() => openTilgen(uid, currentUser.id, amt)} style={{ padding: "5px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, border: `1.5px solid ${BRAND}`, background: "transparent", cursor: "pointer", color: BRAND, fontWeight: 600 }}>Tilgen</button>
                     </div>
                   ))}
                 </div>
@@ -198,7 +260,8 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
                     <div key={uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)" }}>
                       <Avatar name={getName(uid)} />
                       <span style={{ flex: 1, fontWeight: 600, fontSize: 15 }}>{getName(uid)}</span>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-danger)" }}>-{fmt(amt)}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-danger)", marginRight: 8 }}>-{fmt(amt)}</span>
+                      <button onClick={() => openTilgen(currentUser.id, uid, amt)} style={{ padding: "5px 12px", borderRadius: "var(--radius-sm)", fontSize: 12, border: `1.5px solid ${BRAND}`, background: "transparent", cursor: "pointer", color: BRAND, fontWeight: 600 }}>Tilgen</button>
                     </div>
                   ))}
                 </div>
