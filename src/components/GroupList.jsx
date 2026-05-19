@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sha256, BRAND, BRAND_LT, SILVER, GROUP_ICONS, GROUP_COLORS, VORSTAND_USER, LIST_ADM_HASH, fmt } from "../constants";
-import { computeBalances, computeTransactions } from "../logic";
+import { computeBalances, computeTransactions, computePersonalSummary } from "../logic";
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
 import UserManagement from "./UserManagement";
 
@@ -73,6 +73,13 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const canCreate = newName.trim() && newAdminPw.trim() && newMembers.length >= 2;
   const visibleGroups = currentUser.isVorstand ? groups : groups.filter(g => g.members.includes(currentUser.id));
 
+  const { owedToMe, iOwe } = computePersonalSummary(visibleGroups, currentUser.id);
+  const owedToMeList = Object.entries(owedToMe).filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]);
+  const iOweList = Object.entries(iOwe).filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]);
+  const totalOwedToMe = owedToMeList.reduce((s, [, v]) => s + v, 0);
+  const totalIOwe = iOweList.reduce((s, [, v]) => s + v, 0);
+  const hasPersonalData = owedToMeList.length > 0 || iOweList.length > 0;
+
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
       {showUserMgmt && currentUser.isVorstand && (
@@ -143,6 +150,48 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
       </div>
 
       <div style={{ padding: "0 1rem 2rem" }}>
+        {hasPersonalData && (
+          <Card style={{ padding: "1.25rem", marginBottom: "1.5rem" }}>
+            <SectionLabel style={{ marginTop: 0 }}>Meine Bilanz</SectionLabel>
+            <div style={{ display: "flex", gap: 10, marginBottom: owedToMeList.length + iOweList.length > 0 ? "1rem" : 0 }}>
+              {totalOwedToMe > 0.005 && (
+                <div style={{ flex: 1, padding: "10px 14px", borderRadius: "var(--radius-sm)", background: "var(--color-background-secondary)", textAlign: "center" }}>
+                  <p style={{ margin: 0, fontSize: 11, color: "var(--color-text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Ich bekomme</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 800, color: "var(--color-text-success)" }}>{fmt(totalOwedToMe)}</p>
+                </div>
+              )}
+              {totalIOwe > 0.005 && (
+                <div style={{ flex: 1, padding: "10px 14px", borderRadius: "var(--radius-sm)", background: "var(--color-background-secondary)", textAlign: "center" }}>
+                  <p style={{ margin: 0, fontSize: 11, color: "var(--color-text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Ich schulde</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 800, color: "var(--color-text-danger)" }}>{fmt(totalIOwe)}</p>
+                </div>
+              )}
+            </div>
+            {owedToMeList.length > 0 && (
+              <div style={{ display: "grid", gap: 6, marginBottom: iOweList.length > 0 ? "0.75rem" : 0 }}>
+                {owedToMeList.map(([uid, amt]) => (
+                  <div key={uid} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Avatar name={getName(uid)} size={28} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{getName(uid)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-success)" }}>+{fmt(amt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {iOweList.length > 0 && (
+              <div style={{ display: "grid", gap: 6 }}>
+                {iOweList.map(([uid, amt]) => (
+                  <div key={uid} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Avatar name={getName(uid)} size={28} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{getName(uid)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text-danger)" }}>-{fmt(amt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
           <SectionLabel style={{ margin: 0 }}>{visibleGroups.length} {visibleGroups.length === 1 ? "Gruppe" : "Gruppen"}</SectionLabel>
           {!isListAdmin

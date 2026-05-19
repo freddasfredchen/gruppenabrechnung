@@ -72,6 +72,25 @@ export function computeCrossGroupNetting(groups) {
   return groups.filter(g => added[g.id].length > 0).map(g => ({ ...g, payments: [...g.payments, ...added[g.id]] }));
 }
 
+export function computePersonalSummary(groups, userId) {
+  const owedToMe = {};
+  const iOwe = {};
+
+  for (const g of groups) {
+    if (!g.members.includes(userId)) continue;
+    const txs = computeTransactions(computeBalances(g.members, g.expenses, g.payments));
+    for (const tx of txs) {
+      if (tx.to === userId) {
+        owedToMe[tx.from] = (owedToMe[tx.from] || 0) + tx.amt;
+      } else if (tx.from === userId) {
+        iOwe[tx.to] = (iOwe[tx.to] || 0) + tx.amt;
+      }
+    }
+  }
+
+  return { owedToMe, iOwe };
+}
+
 export function computeTransactions(balances) {
   const d = [], c = [];
   Object.entries(balances).forEach(([id, v]) => {
