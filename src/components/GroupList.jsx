@@ -267,7 +267,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
       <div style={{ padding: "0 1rem 2rem" }}>
         <div style={{ display: "flex", gap: 6, marginBottom: "1.5rem" }}>
-          {["gruppen", "bilanz"].map(k => (
+          {["bilanz", "gruppen"].map(k => (
             <button key={k} onClick={() => setMainView(k)} style={{ padding: "7px 18px", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: mainView === k ? 700 : 500, cursor: "pointer", border: mainView === k ? "none" : "1px solid var(--color-border-secondary)", background: mainView === k ? BRAND : "transparent", color: mainView === k ? "#fff" : "var(--color-text-secondary)", transition: "all 0.15s" }}>
               {k === "gruppen" ? "Gruppen" : "Meine Bilanz"}
             </button>
