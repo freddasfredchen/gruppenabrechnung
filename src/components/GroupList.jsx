@@ -37,6 +37,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
     const pi = currentUser.paymentInfo || {};
     setProfileForm({ paypal: pi.paypal || "", iban: pi.iban || "", sonstiges: pi.sonstiges || "" });
     setProfileDone(false);
+    setPwCurrent(""); setPwNew(""); setPwConfirm(""); setPwChangeErr(null); setPwChangeDone(false);
     setShowProfile(true);
   };
 
@@ -47,19 +48,13 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
     setProfileDone(true);
   };
 
-  const [showPwChange, setShowPwChange] = useState(false);
+  const [showPwChange] = useState(false); // unused, kept for safety
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [pwChangeErr, setPwChangeErr] = useState(null);
   const [pwChanging, setPwChanging] = useState(false);
   const [pwChangeDone, setPwChangeDone] = useState(false);
-
-  const closePwModal = () => {
-    setShowPwChange(false);
-    setPwCurrent(""); setPwNew(""); setPwConfirm("");
-    setPwChangeErr(null); setPwChangeDone(false);
-  };
 
   const submitPwChange = async () => {
     if (pwNew.length < 6) { setPwChangeErr("min"); return; }
@@ -179,67 +174,45 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
               <Avatar name={currentUser.name} size={42} />
               <div>
                 <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{currentUser.name}</p>
-                <p style={{ fontSize: 12, margin: "2px 0 0", color: "var(--color-text-secondary)" }}>Zahlungsinfos bearbeiten</p>
+                <p style={{ fontSize: 12, margin: "2px 0 0", color: "var(--color-text-secondary)" }}>Profil bearbeiten</p>
               </div>
             </div>
-            {profileDone ? (
-              <>
-                <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-success)", textAlign: "center" }}>Gespeichert!</p>
-                <PrimaryBtn onClick={() => setShowProfile(false)} full>Schließen</PrimaryBtn>
-              </>
-            ) : (
-              <>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>PayPal (E-Mail oder Link)</label>
-                  <Inp placeholder="z.B. name@email.de" value={profileForm.paypal} onChange={e => setProfileForm(f => ({ ...f, paypal: e.target.value }))} />
-                </div>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>IBAN</label>
-                  <Inp placeholder="z.B. DE89 3704 0044 …" value={profileForm.iban} onChange={e => setProfileForm(f => ({ ...f, iban: e.target.value }))} />
-                </div>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>Sonstiges</label>
-                  <Inp placeholder="z.B. Revolut, Venmo …" value={profileForm.sonstiges} onChange={e => setProfileForm(f => ({ ...f, sonstiges: e.target.value }))} />
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => setShowProfile(false)} style={{ flex: 1, padding: "9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
-                  <PrimaryBtn onClick={saveProfile} disabled={profileSaving} full>{profileSaving ? "…" : "Speichern"}</PrimaryBtn>
-                </div>
-              </>
-            )}
+
+            <SectionLabel style={{ margin: 0 }}>Zahlungsinfos</SectionLabel>
+            {profileDone && <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-success)" }}>Zahlungsinfos gespeichert.</p>}
+            <div style={{ display: "grid", gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>PayPal (E-Mail oder Link)</label>
+              <Inp placeholder="z.B. name@email.de" value={profileForm.paypal} onChange={e => setProfileForm(f => ({ ...f, paypal: e.target.value }))} />
+            </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>IBAN</label>
+              <Inp placeholder="z.B. DE89 3704 0044 …" value={profileForm.iban} onChange={e => setProfileForm(f => ({ ...f, iban: e.target.value }))} />
+            </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>Sonstiges</label>
+              <Inp placeholder="z.B. Revolut, Venmo …" value={profileForm.sonstiges} onChange={e => setProfileForm(f => ({ ...f, sonstiges: e.target.value }))} />
+            </div>
+            <PrimaryBtn onClick={saveProfile} disabled={profileSaving} full>{profileSaving ? "…" : "Zahlungsinfos speichern"}</PrimaryBtn>
+
+            <div style={{ borderTop: "1px solid var(--color-border-secondary)", paddingTop: 14, display: "grid", gap: 10 }}>
+              <SectionLabel style={{ margin: 0 }}>Passwort ändern</SectionLabel>
+              {pwChangeDone && <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-success)" }}>Passwort erfolgreich geändert.</p>}
+              <Inp type="password" placeholder="Aktuelles Passwort" value={pwCurrent} onChange={e => { setPwCurrent(e.target.value); setPwChangeErr(null); }} style={{ border: pwChangeErr === "wrong" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+              {pwChangeErr === "wrong" && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Aktuelles Passwort falsch.</p>}
+              <Inp type="password" placeholder="Neues Passwort" value={pwNew} onChange={e => { setPwNew(e.target.value); setPwChangeErr(null); }} style={{ border: pwChangeErr === "min" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+              {pwChangeErr === "min" && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Mindestens 6 Zeichen.</p>}
+              <Inp type="password" placeholder="Neues Passwort bestätigen" value={pwConfirm} onChange={e => { setPwConfirm(e.target.value); setPwChangeErr(null); }} onKeyDown={e => e.key === "Enter" && submitPwChange()} style={{ border: pwChangeErr === "mismatch" ? "1.5px solid var(--color-border-danger)" : undefined }} />
+              {pwChangeErr === "mismatch" && <p style={{ margin: "-4px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Passwörter stimmen nicht überein.</p>}
+              <PrimaryBtn onClick={submitPwChange} disabled={pwChanging || !pwCurrent || !pwNew || !pwConfirm} full>{pwChanging ? "…" : "Passwort speichern"}</PrimaryBtn>
+            </div>
+
+            <button onClick={() => setShowProfile(false)} style={{ padding: "9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Schließen</button>
           </div>
         </ModalWrap>
       )}
 
       {showUserMgmt && currentUser.isVorstand && (
         <UserManagement users={users} onAdd={u => onCreateGroup(null, u)} onRemove={id => onDeleteGroup(null, id)} onResetPw={onUpdateUserPw} onClose={() => setShowUserMgmt(false)} />
-      )}
-
-      {showPwChange && (
-        <ModalWrap>
-          <div style={{ width: "100%", maxWidth: 320, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
-            <p style={{ fontWeight: 700, fontSize: 15, margin: 0, color: BRAND }}>Passwort ändern</p>
-            {pwChangeDone ? (
-              <>
-                <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-success)", textAlign: "center" }}>Passwort erfolgreich geändert.</p>
-                <PrimaryBtn onClick={closePwModal} full>Schließen</PrimaryBtn>
-              </>
-            ) : (
-              <>
-                <Inp type="password" placeholder="Aktuelles Passwort" value={pwCurrent} onChange={e => { setPwCurrent(e.target.value); setPwChangeErr(null); }} autoFocus style={{ border: pwChangeErr === "wrong" ? "1.5px solid var(--color-border-danger)" : undefined }} />
-                {pwChangeErr === "wrong" && <p style={{ margin: "-8px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Aktuelles Passwort falsch.</p>}
-                <Inp type="password" placeholder="Neues Passwort" value={pwNew} onChange={e => { setPwNew(e.target.value); setPwChangeErr(null); }} style={{ border: pwChangeErr === "min" ? "1.5px solid var(--color-border-danger)" : undefined }} />
-                {pwChangeErr === "min" && <p style={{ margin: "-8px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Mindestens 6 Zeichen.</p>}
-                <Inp type="password" placeholder="Neues Passwort bestätigen" value={pwConfirm} onChange={e => { setPwConfirm(e.target.value); setPwChangeErr(null); }} onKeyDown={e => e.key === "Enter" && submitPwChange()} style={{ border: pwChangeErr === "mismatch" ? "1.5px solid var(--color-border-danger)" : undefined }} />
-                {pwChangeErr === "mismatch" && <p style={{ margin: "-8px 0 0", fontSize: 12, color: "var(--color-text-danger)" }}>Passwörter stimmen nicht überein.</p>}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={closePwModal} style={{ flex: 1, padding: "9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
-                  <PrimaryBtn onClick={submitPwChange} disabled={pwChanging || !pwCurrent || !pwNew || !pwConfirm} full>{pwChanging ? "…" : "Speichern"}</PrimaryBtn>
-                </div>
-              </>
-            )}
-          </div>
-        </ModalWrap>
       )}
 
       {showListAdminModal && (
@@ -267,10 +240,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
               <button onClick={() => setShowUserMgmt(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Nutzer</button>
             )}
             {!currentUser.isVorstand && (
-              <>
-                <button onClick={openProfile} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Profil</button>
-                <button onClick={() => setShowPwChange(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Passwort</button>
-              </>
+              <button onClick={openProfile} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Profil</button>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: "var(--radius-full)", padding: "5px 12px 5px 5px", cursor: "pointer" }} onClick={onLogout}>
               <Avatar name={currentUser.name} size={26} />
