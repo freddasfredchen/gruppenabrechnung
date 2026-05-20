@@ -6,13 +6,14 @@ export default function ManualPayment({ members, getName, onSave }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
   const [open, setOpen] = useState(false);
 
   const save = () => {
     const amt = parseFloat(amount.replace(",", "."));
     if (!from || !to || from === to || isNaN(amt) || amt <= 0) return;
-    onSave(from, to, amt);
-    setFrom(""); setTo(""); setAmount(""); setOpen(false);
+    onSave(from, to, amt, note.trim());
+    setFrom(""); setTo(""); setAmount(""); setNote(""); setOpen(false);
   };
 
   if (members.length < 2) return null;
@@ -27,6 +28,7 @@ export default function ManualPayment({ members, getName, onSave }) {
             <div><SectionLabel>Von (zahlt)</SectionLabel><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{members.map(uid => <ToggleBtn key={uid} active={from === uid} onClick={() => setFrom(f => f === uid ? "" : uid)}>{getName(uid)}</ToggleBtn>)}</div></div>
             <div><SectionLabel>An (empfängt)</SectionLabel><div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{members.filter(uid => uid !== from).map(uid => <ToggleBtn key={uid} active={to === uid} onClick={() => setTo(t => t === uid ? "" : uid)}>{getName(uid)}</ToggleBtn>)}</div></div>
             <Inp placeholder="Betrag (€)" value={amount} onChange={e => setAmount(e.target.value)} />
+            <Inp placeholder="Kommentar (optional)" value={note} onChange={e => setNote(e.target.value)} onKeyDown={e => e.key === "Enter" && save()} />
             <PrimaryBtn onClick={save} disabled={!from || !to || !amount} full>Speichern</PrimaryBtn>
           </div>
         </Card>

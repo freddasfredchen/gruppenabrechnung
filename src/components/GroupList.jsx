@@ -11,6 +11,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const [mainView, setMainView] = useState("bilanz");
   const [tilgenModal, setTilgenModal] = useState(null); // { fromId, toId, maxAmt }
   const [tilgenAmt, setTilgenAmt] = useState("");
+  const [tilgenNote, setTilgenNote] = useState("");
   const [tilgenLoading, setTilgenLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
@@ -90,6 +91,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const openTilgen = (fromId, toId, maxAmt) => {
     setTilgenModal({ fromId, toId, maxAmt });
     setTilgenAmt(maxAmt.toFixed(2).replace(".", ","));
+    setTilgenNote("");
   };
 
   const confirmTilgen = async () => {
@@ -109,7 +111,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
         members: [...group.members],
         expenses: [...group.expenses],
         recurringExpenses: [...(group.recurringExpenses || [])],
-        payments: [...group.payments, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, from: fromId, to: toId, amount: payAmt, date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }],
+        payments: [...group.payments, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, from: fromId, to: toId, amount: payAmt, note: tilgenNote.trim() || undefined, date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }],
       };
       await onUpdateGroup(updated);
     }
@@ -178,10 +180,10 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
                 type="number" min="0.01" step="0.01"
                 value={tilgenAmt}
                 onChange={e => setTilgenAmt(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && confirmTilgen()}
                 autoFocus
               />
             </div>
+            <Inp placeholder="Kommentar (optional)" value={tilgenNote} onChange={e => setTilgenNote(e.target.value)} onKeyDown={e => e.key === "Enter" && confirmTilgen()} />
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setTilgenModal(null)} style={{ flex: 1, padding: "10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Abbrechen</button>
               <PrimaryBtn onClick={confirmTilgen} disabled={tilgenLoading || !tilgenAmt} full>{tilgenLoading ? "…" : "Tilgen"}</PrimaryBtn>

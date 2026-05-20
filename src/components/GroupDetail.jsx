@@ -229,6 +229,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
   const [apw, setApw] = useState({ current: "", next: "", confirm: "", err: null, saving: false, done: false });
   const [confirmTx, setConfirmTx] = useState(null);
+  const [confirmNote, setConfirmNote] = useState("");
 
   const g = group;
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
@@ -328,7 +329,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   };
 
   const removeExpense = id => save(ng => { ng.expenses = ng.expenses.filter(e => e.id !== id); });
-  const recordPayment = (from, to, amount) => save(ng => { ng.payments = [...ng.payments, { id: Date.now() + "", from, to, amount, date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }]; });
+  const recordPayment = (from, to, amount, note = "") => save(ng => { ng.payments = [...ng.payments, { id: Date.now() + "", from, to, amount, note: note || undefined, date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }]; });
   const removePayment = id => save(ng => { ng.payments = ng.payments.filter(p => p.id !== id); });
   const togglePart = uid => setExpForm(f => ({ ...f, participants: f.participants.includes(uid) ? f.participants.filter(p => p !== uid) : [...f.participants, uid] }));
 
@@ -383,9 +384,10 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
               <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>→ {getName(confirmTx.to)}</span>
               <span style={{ fontWeight: 700 }}>{fmt(confirmTx.amt)}</span>
             </div>
+            <Inp placeholder="Kommentar (optional)" value={confirmNote} onChange={e => setConfirmNote(e.target.value)} onKeyDown={e => e.key === "Enter" && (recordPayment(confirmTx.from, confirmTx.to, confirmTx.amt, confirmNote.trim()), setConfirmTx(null), setConfirmNote(""))} />
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setConfirmTx(null)} style={{ flex: 1, padding: "10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Nein</button>
-              <PrimaryBtn onClick={() => { recordPayment(confirmTx.from, confirmTx.to, confirmTx.amt); setConfirmTx(null); }} full>Ja</PrimaryBtn>
+              <button onClick={() => { setConfirmTx(null); setConfirmNote(""); }} style={{ flex: 1, padding: "10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Nein</button>
+              <PrimaryBtn onClick={() => { recordPayment(confirmTx.from, confirmTx.to, confirmTx.amt, confirmNote.trim()); setConfirmTx(null); setConfirmNote(""); }} full>Ja</PrimaryBtn>
             </div>
           </div>
         </ModalWrap>
@@ -581,6 +583,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
                       <span style={{ display: "block", fontSize: 11, color: p.type === "netting" ? "var(--color-text-success)" : "var(--color-text-link, #3B82F6)" }}>
                         {p.date}{p.type === "netting" ? " · Durch Verrechnung getilgt" : ` · Durch Zahlung getilgt${p.recordedBy && p.recordedBy !== p.from ? ` (${getName(p.recordedBy)})` : ""}`}
                       </span>
+                      {p.note && <span style={{ display: "block", fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>💬 {p.note}</span>}
                     </div>
                     <span style={{ fontWeight: 700, color: "var(--color-text-success)", marginRight: isAdmin ? 8 : 0 }}>{fmt(p.amount)}</span>
                     {isAdmin && <button onClick={() => removePayment(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: BRAND_LT, fontSize: 18, lineHeight: 1, padding: "0 2px", fontWeight: 700 }}>×</button>}
