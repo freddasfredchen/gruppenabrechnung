@@ -21,6 +21,40 @@ export const CATEGORIES = [
   { id: "other",     label: "Sonstiges",    icon: "📦", color: "#95A5A6" },
 ];
 
+export const PAYMENT_LINK_ALLOWLIST = [
+  "paypal.com",
+  "paypal.me",
+  "revolut.me",
+  "revolut.com",
+  "wise.com",
+  "venmo.com",
+  "cashapp.com",
+  "cash.app",
+  "klarna.com",
+  "n26.com",
+  "monzo.me",
+  "monzo.com",
+  "sumup.me",
+];
+
+export function isTrustedPaymentLink(value) {
+  if (!value || !value.trim()) return false;
+  try {
+    const url = new URL(value.trim().startsWith("http") ? value.trim() : `https://${value.trim()}`);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    const hostname = url.hostname.toLowerCase();
+    return PAYMENT_LINK_ALLOWLIST.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
+
+export function normalizePaymentLink(value) {
+  if (!value) return value;
+  const v = value.trim();
+  return v.startsWith("http://") || v.startsWith("https://") ? v : `https://${v}`;
+}
+
 export async function sha256(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { sha256, BRAND, BRAND_LT, SILVER, GROUP_ICONS, GROUP_COLORS, VORSTAND_USER, LIST_ADM_HASH, fmt } from "../constants";
+import { sha256, BRAND, BRAND_LT, SILVER, GROUP_ICONS, GROUP_COLORS, VORSTAND_USER, LIST_ADM_HASH, fmt, isTrustedPaymentLink, normalizePaymentLink } from "../constants";
 import { computeBalances, computeTransactions, computePersonalSummary, getDebtGroups } from "../logic";
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
 import UserManagement from "./UserManagement";
@@ -142,10 +142,27 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             </div>
             {(() => {
               const pi = allUsers.find(u => u.id === tilgenModal.toId)?.paymentInfo;
-              const infos = [pi?.paypal && `PayPal: ${pi.paypal}`, pi?.iban && `IBAN: ${pi.iban}`, pi?.sonstiges && pi.sonstiges].filter(Boolean);
-              return infos.length > 0 ? (
-                <div style={{ padding: "8px 12px", background: "var(--brand-a10)", borderRadius: "var(--radius-sm)", display: "grid", gap: 3 }}>
-                  {infos.map((info, i) => <p key={i} style={{ margin: 0, fontSize: 12, color: BRAND, fontWeight: 600 }}>{info}</p>)}
+              const entries = [
+                pi?.paypal   && { label: "PayPal",    value: pi.paypal },
+                pi?.iban     && { label: "IBAN",       value: pi.iban },
+                pi?.sonstiges && { label: null,        value: pi.sonstiges },
+              ].filter(Boolean);
+              return entries.length > 0 ? (
+                <div style={{ padding: "10px 12px", background: "var(--brand-a10)", borderRadius: "var(--radius-sm)", display: "grid", gap: 6 }}>
+                  {entries.map((entry, i) => {
+                    const trusted = isTrustedPaymentLink(entry.value);
+                    const href = trusted ? normalizePaymentLink(entry.value) : null;
+                    return (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {entry.label && <span style={{ fontSize: 11, fontWeight: 700, color: BRAND, minWidth: 44 }}>{entry.label}</span>}
+                        {trusted ? (
+                          <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: BRAND, fontWeight: 600, wordBreak: "break-all", textDecoration: "underline" }}>{entry.value}</a>
+                        ) : (
+                          <span style={{ fontSize: 13, color: BRAND, fontWeight: 600, wordBreak: "break-all" }}>{entry.value}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null;
             })()}
