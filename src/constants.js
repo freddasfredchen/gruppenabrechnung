@@ -24,17 +24,7 @@ export const CATEGORIES = [
 export const PAYMENT_LINK_ALLOWLIST = [
   "paypal.com",
   "paypal.me",
-  "revolut.me",
-  "revolut.com",
-  "wise.com",
-  "venmo.com",
-  "cashapp.com",
-  "cash.app",
-  "klarna.com",
-  "n26.com",
-  "monzo.me",
-  "monzo.com",
-  "sumup.me",
+  "paypal.de",
 ];
 
 export function isTrustedPaymentLink(value) {

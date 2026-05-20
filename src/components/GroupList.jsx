@@ -29,13 +29,13 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const [showUserMgmt, setShowUserMgmt] = useState(false);
 
   const [showProfile, setShowProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({ paypal: "" });
+  const [profileForm, setProfileForm] = useState({ paypal: "", iban: "" });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileDone, setProfileDone] = useState(false);
 
   const openProfile = () => {
     const pi = currentUser.paymentInfo || {};
-    setProfileForm({ paypal: pi.paypal || "" });
+    setProfileForm({ paypal: pi.paypal || "", iban: pi.iban || "" });
     setProfileDone(false);
     setPwCurrent(""); setPwNew(""); setPwConfirm(""); setPwChangeErr(null); setPwChangeDone(false);
     setShowProfile(true);
@@ -142,25 +142,28 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             </div>
             {(() => {
               const pi = allUsers.find(u => u.id === tilgenModal.toId)?.paymentInfo;
-              const entries = [
-                pi?.paypal && { label: "PayPal", value: pi.paypal },
-              ].filter(Boolean);
-              return entries.length > 0 ? (
+              const hasInfo = pi?.paypal || pi?.iban;
+              return hasInfo ? (
                 <div style={{ padding: "10px 12px", background: "var(--brand-a10)", borderRadius: "var(--radius-sm)", display: "grid", gap: 6 }}>
-                  {entries.map((entry, i) => {
-                    const trusted = isTrustedPaymentLink(entry.value);
-                    const href = trusted ? normalizePaymentLink(entry.value) : null;
+                  {pi?.paypal && (() => {
+                    const trusted = isTrustedPaymentLink(pi.paypal);
+                    const href = trusted ? normalizePaymentLink(pi.paypal) : null;
                     return (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        {entry.label && <span style={{ fontSize: 11, fontWeight: 700, color: BRAND, minWidth: 44 }}>{entry.label}</span>}
-                        {trusted ? (
-                          <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: BRAND, fontWeight: 600, wordBreak: "break-all", textDecoration: "underline" }}>{entry.value}</a>
-                        ) : (
-                          <span style={{ fontSize: 13, color: BRAND, fontWeight: 600, wordBreak: "break-all" }}>{entry.value}</span>
-                        )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: BRAND, minWidth: 44 }}>PayPal</span>
+                        {trusted
+                          ? <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: BRAND, fontWeight: 600, wordBreak: "break-all", textDecoration: "underline" }}>{pi.paypal}</a>
+                          : <span style={{ fontSize: 13, color: BRAND, fontWeight: 600, wordBreak: "break-all" }}>{pi.paypal}</span>
+                        }
                       </div>
                     );
-                  })}
+                  })()}
+                  {pi?.iban && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: BRAND, minWidth: 44 }}>IBAN</span>
+                      <span style={{ fontSize: 13, color: BRAND, fontWeight: 600, wordBreak: "break-all" }}>{pi.iban}</span>
+                    </div>
+                  )}
                 </div>
               ) : null;
             })()}
@@ -196,8 +199,12 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             <SectionLabel style={{ margin: 0 }}>Zahlungsinfos</SectionLabel>
             {profileDone && <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-success)" }}>Zahlungsinfos gespeichert.</p>}
             <div style={{ display: "grid", gap: 6 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>PayPal (E-Mail oder Freunde-senden-Link)</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>PayPal (Freunde-senden-Link)</label>
               <Inp placeholder="z.B. paypal.me/deinname" value={profileForm.paypal} onChange={e => setProfileForm(f => ({ ...f, paypal: e.target.value }))} />
+            </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>IBAN</label>
+              <Inp placeholder="z.B. DE89 3704 0044 …" value={profileForm.iban} onChange={e => setProfileForm(f => ({ ...f, iban: e.target.value }))} />
             </div>
             <PrimaryBtn onClick={saveProfile} disabled={profileSaving} full>{profileSaving ? "…" : "Zahlungsinfos speichern"}</PrimaryBtn>
 
