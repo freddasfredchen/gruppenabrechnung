@@ -180,7 +180,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState("");
 
-  const emptyRecForm = { desc: "", amount: "", payer: "", participants: [], category: "other", dayOfMonth: "1" };
+  const emptyRecForm = { desc: "", amount: "", payer: "", participants: [], category: "other", dayOfMonth: "1", splitMode: "equal", shares: {} };
   const [recForm, setRecForm] = useState(emptyRecForm);
   const [showRecForm, setShowRecForm] = useState(false);
 
@@ -189,14 +189,42 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
     [g.recurringExpenses]
   );
 
+  const handleRecSplitModeChange = mode => {
+    const parts = recForm.participants.length > 0 ? recForm.participants : g.members;
+    const amt = parseFloat(String(recForm.amount).replace(",", ".")) || 0;
+    let shares = {};
+    if (mode === "proportional") {
+      const pct = parseFloat((100 / parts.length).toFixed(1));
+      parts.forEach(uid => { shares[uid] = pct; });
+    } else if (mode === "exact") {
+      const share = amt > 0 ? parseFloat((amt / parts.length).toFixed(2)) : "";
+      parts.forEach(uid => { shares[uid] = share; });
+    }
+    setRecForm(f => ({ ...f, splitMode: mode, shares }));
+  };
+
   const canSaveRec = () => {
     const amt = parseFloat(String(recForm.amount).replace(",", "."));
-    return recForm.desc.trim() && !isNaN(amt) && amt > 0 && recForm.payer && parseInt(recForm.dayOfMonth) >= 1 && parseInt(recForm.dayOfMonth) <= 28;
+    if (!recForm.desc.trim() || isNaN(amt) || amt <= 0 || !recForm.payer) return false;
+    if (parseInt(recForm.dayOfMonth) < 1 || parseInt(recForm.dayOfMonth) > 28) return false;
+    const parts = recForm.participants.length > 0 ? recForm.participants : g.members;
+    if (recForm.splitMode === "proportional") {
+      const total = parts.reduce((s, uid) => s + (parseFloat(recForm.shares[uid]) || 0), 0);
+      if (Math.abs(total - 100) > 0.5) return false;
+    }
+    if (recForm.splitMode === "exact") {
+      const total = parts.reduce((s, uid) => s + (parseFloat(recForm.shares[uid]) || 0), 0);
+      if (Math.abs(total - amt) > 0.01) return false;
+    }
+    return true;
   };
 
   const addRecurring = () => {
     if (!canSaveRec()) return;
     const amt = parseFloat(String(recForm.amount).replace(",", "."));
+    const shares = recForm.splitMode !== "equal"
+      ? Object.fromEntries(Object.entries(recForm.shares).map(([k, v]) => [k, parseFloat(v) || 0]).filter(([, v]) => v > 0))
+      : {};
     save(ng => {
       ng.recurringExpenses.push({
         id: Date.now() + "",
@@ -204,7 +232,9 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
         amount: amt,
         payer: recForm.payer,
         category: recForm.category,
-        participants: recForm.participants,
+        participants: recForm.splitMode === "equal" ? recForm.participants : [],
+        splitMode: recForm.splitMode,
+        shares,
         dayOfMonth: parseInt(recForm.dayOfMonth),
         lastProcessed: null,
         active: true,
@@ -231,8 +261,8 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
             payer: r.payer,
             category: r.category,
             participants: r.participants || [],
-            splitMode: "equal",
-            shares: {},
+            splitMode: r.splitMode || "equal",
+            shares: r.shares || {},
             date: date.toLocaleDateString("de-DE"),
           });
         }
@@ -615,14 +645,29 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
                   </div>
 
                   <div>
-                    <SectionLabel>Aufgeteilt unter <span style={{ textTransform: "none", fontWeight: 400, letterSpacing: 0, opacity: 0.6 }}>(leer = alle)</span></SectionLabel>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {g.members.map(uid => (
-                        <ToggleBtn key={uid} active={recForm.participants.includes(uid)} onClick={() => setRecForm(f => ({ ...f, participants: f.participants.includes(uid) ? f.participants.filter(p => p !== uid) : [...f.participants, uid] }))}>
-                          {getName(uid)}
-                        </ToggleBtn>
+                    <SectionLabel>Aufteilung</SectionLabel>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                      {SPLIT_MODES.map(m => (
+                        <button key={m.id} onClick={() => handleRecSplitModeChange(m.id)} style={{ padding: "6px 14px", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: recForm.splitMode === m.id ? 700 : 500, cursor: "pointer", border: recForm.splitMode === m.id ? `2px solid ${BRAND}` : "1px solid var(--color-border-secondary)", background: recForm.splitMode === m.id ? "var(--brand-a10)" : "transparent", color: recForm.splitMode === m.id ? BRAND : "var(--color-text-secondary)", transition: "all 0.15s" }}>
+                          {m.label}
+                        </button>
                       ))}
                     </div>
+                    {recForm.splitMode === "equal" && (
+                      <div>
+                        <SectionLabel style={{ margin: "0 0 8px" }}>Aufgeteilt unter <span style={{ textTransform: "none", fontWeight: 400, letterSpacing: 0, opacity: 0.6 }}>(leer = alle)</span></SectionLabel>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {g.members.map(uid => (
+                            <ToggleBtn key={uid} active={recForm.participants.includes(uid)} onClick={() => setRecForm(f => ({ ...f, participants: f.participants.includes(uid) ? f.participants.filter(p => p !== uid) : [...f.participants, uid] }))}>
+                              {getName(uid)}
+                            </ToggleBtn>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {(recForm.splitMode === "proportional" || recForm.splitMode === "exact") && (
+                      <SplitInput members={g.members} getName={getName} splitMode={recForm.splitMode} amount={recForm.amount} shares={recForm.shares} setShares={s => setRecForm(f => ({ ...f, shares: typeof s === "function" ? s(f.shares) : s }))} />
+                    )}
                   </div>
 
                   <PrimaryBtn onClick={addRecurring} disabled={!canSaveRec()} full>Dauerauftrag anlegen</PrimaryBtn>
@@ -648,9 +693,14 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
                       </div>
                       <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-secondary)" }}>
                         {getName(r.payer)} · am {r.dayOfMonth}. des Monats
+                        {r.splitMode && r.splitMode !== "equal" && <span style={{ marginLeft: 5, fontSize: 11, fontWeight: 600, color: BRAND }}>· {SPLIT_MODES.find(m => m.id === r.splitMode)?.label}</span>}
                       </p>
                       <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--color-text-tertiary)" }}>
-                        {r.participants?.length > 0 ? r.participants.map(uid => getName(uid)).join(", ") : "Alle Mitglieder"}
+                        {r.splitMode === "proportional"
+                          ? Object.entries(r.shares || {}).map(([uid, pct]) => `${getName(uid)}: ${pct}%`).join(", ")
+                          : r.splitMode === "exact"
+                          ? Object.entries(r.shares || {}).map(([uid, amt]) => `${getName(uid)}: ${fmt(amt)}`).join(", ")
+                          : r.participants?.length > 0 ? r.participants.map(uid => getName(uid)).join(", ") : "Alle Mitglieder"}
                       </p>
                       <p style={{ margin: "2px 0 0", fontSize: 11, color: r.lastProcessed ? "var(--color-text-success)" : "var(--color-text-secondary)" }}>
                         {r.lastProcessed ? `Zuletzt verbucht: ${r.lastProcessed}` : "Noch nicht ausgeführt"}
