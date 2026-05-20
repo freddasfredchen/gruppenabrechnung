@@ -4,7 +4,7 @@ import { computeBalances, computeTransactions, computePersonalSummary, getDebtGr
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
 import UserManagement from "./UserManagement";
 
-export default function GroupList({ groups, users, currentUser, onEnter, onCreateGroup, onDeleteGroup, onLogout, onUpdateUserPw, onUpdateGroup }) {
+export default function GroupList({ groups, users, currentUser, onEnter, onCreateGroup, onDeleteGroup, onLogout, onUpdateUserPw, onUpdateGroup, onUpdateUserProfile }) {
   const allUsers = [VORSTAND_USER, ...users];
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
 
@@ -27,6 +27,25 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const [ladminLoading, setLadminLoading] = useState(false);
 
   const [showUserMgmt, setShowUserMgmt] = useState(false);
+
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ paypal: "", iban: "", sonstiges: "" });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileDone, setProfileDone] = useState(false);
+
+  const openProfile = () => {
+    const pi = currentUser.paymentInfo || {};
+    setProfileForm({ paypal: pi.paypal || "", iban: pi.iban || "", sonstiges: pi.sonstiges || "" });
+    setProfileDone(false);
+    setShowProfile(true);
+  };
+
+  const saveProfile = async () => {
+    setProfileSaving(true);
+    await onUpdateUserProfile(currentUser.id, profileForm);
+    setProfileSaving(false);
+    setProfileDone(true);
+  };
 
   const [showPwChange, setShowPwChange] = useState(false);
   const [pwCurrent, setPwCurrent] = useState("");
@@ -126,6 +145,15 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
               <span style={{ color: "var(--color-text-secondary)", flex: 1 }}>→ {getName(tilgenModal.toId)}</span>
               <span style={{ fontWeight: 700 }}>{fmt(tilgenModal.maxAmt)}</span>
             </div>
+            {(() => {
+              const pi = allUsers.find(u => u.id === tilgenModal.toId)?.paymentInfo;
+              const infos = [pi?.paypal && `PayPal: ${pi.paypal}`, pi?.iban && `IBAN: ${pi.iban}`, pi?.sonstiges && pi.sonstiges].filter(Boolean);
+              return infos.length > 0 ? (
+                <div style={{ padding: "8px 12px", background: "var(--brand-a10)", borderRadius: "var(--radius-sm)", display: "grid", gap: 3 }}>
+                  {infos.map((info, i) => <p key={i} style={{ margin: 0, fontSize: 12, color: BRAND, fontWeight: 600 }}>{info}</p>)}
+                </div>
+              ) : null;
+            })()}
             <div>
               <p style={{ margin: "0 0 6px", fontSize: 12, color: "var(--color-text-secondary)" }}>Betrag (max. {fmt(tilgenModal.maxAmt)})</p>
               <Inp
@@ -140,6 +168,45 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
               <button onClick={() => setTilgenModal(null)} style={{ flex: 1, padding: "10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Abbrechen</button>
               <PrimaryBtn onClick={confirmTilgen} disabled={tilgenLoading || !tilgenAmt} full>{tilgenLoading ? "…" : "Tilgen"}</PrimaryBtn>
             </div>
+          </div>
+        </ModalWrap>
+      )}
+
+      {showProfile && (
+        <ModalWrap>
+          <div style={{ width: "100%", maxWidth: 340, background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-hover)", padding: "1.5rem", display: "grid", gap: 14, boxSizing: "border-box" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Avatar name={currentUser.name} size={42} />
+              <div>
+                <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{currentUser.name}</p>
+                <p style={{ fontSize: 12, margin: "2px 0 0", color: "var(--color-text-secondary)" }}>Zahlungsinfos bearbeiten</p>
+              </div>
+            </div>
+            {profileDone ? (
+              <>
+                <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-success)", textAlign: "center" }}>Gespeichert!</p>
+                <PrimaryBtn onClick={() => setShowProfile(false)} full>Schließen</PrimaryBtn>
+              </>
+            ) : (
+              <>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>PayPal (E-Mail oder Link)</label>
+                  <Inp placeholder="z.B. name@email.de" value={profileForm.paypal} onChange={e => setProfileForm(f => ({ ...f, paypal: e.target.value }))} />
+                </div>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>IBAN</label>
+                  <Inp placeholder="z.B. DE89 3704 0044 …" value={profileForm.iban} onChange={e => setProfileForm(f => ({ ...f, iban: e.target.value }))} />
+                </div>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-secondary)" }}>Sonstiges</label>
+                  <Inp placeholder="z.B. Revolut, Venmo …" value={profileForm.sonstiges} onChange={e => setProfileForm(f => ({ ...f, sonstiges: e.target.value }))} />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setShowProfile(false)} style={{ flex: 1, padding: "9px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border-secondary)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", fontSize: 14 }}>Abbrechen</button>
+                  <PrimaryBtn onClick={saveProfile} disabled={profileSaving} full>{profileSaving ? "…" : "Speichern"}</PrimaryBtn>
+                </div>
+              </>
+            )}
           </div>
         </ModalWrap>
       )}
@@ -200,7 +267,10 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
               <button onClick={() => setShowUserMgmt(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Nutzer</button>
             )}
             {!currentUser.isVorstand && (
-              <button onClick={() => setShowPwChange(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Passwort</button>
+              <>
+                <button onClick={openProfile} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Profil</button>
+                <button onClick={() => setShowPwChange(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Passwort</button>
+              </>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: "var(--radius-full)", padding: "5px 12px 5px 5px", cursor: "pointer" }} onClick={onLogout}>
               <Avatar name={currentUser.name} size={26} />

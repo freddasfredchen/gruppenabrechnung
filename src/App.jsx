@@ -46,6 +46,14 @@ export default function App() {
     login(updated);
   };
 
+  const handleUpdateUserProfile = async (userId, paymentInfo) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    const updated = { ...user, paymentInfo };
+    await setDoc(doc(db, "users", userId), updated);
+    if (userId === currentUser.id) login(updated);
+  };
+
   if (!loaded) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-sans)", color: "var(--color-text-secondary)" }}>Lade...</div>;
   if (!currentUser) return <UserLoginScreen users={users} onLogin={login} />;
 
@@ -61,5 +69,5 @@ export default function App() {
     const current = groups.find(g => g.id === activeGroup.id) || activeGroup;
     return <GroupDetail group={current} allUsers={allUsers} onUpdate={handleGroupUpdate} onBack={() => setActiveGroup(null)} currentUser={currentUser} />;
   }
-  return <GroupList groups={groups} users={users} currentUser={currentUser} onEnter={setActiveGroup} onCreateGroup={handleCreate} onDeleteGroup={handleDelete} onLogout={logout} onUpdateUserPw={handleUpdateUserPw} onUpdateGroup={handleGroupUpdate} />;
+  return <GroupList groups={groups} users={users} currentUser={currentUser} onEnter={setActiveGroup} onCreateGroup={handleCreate} onDeleteGroup={handleDelete} onLogout={logout} onUpdateUserPw={handleUpdateUserPw} onUpdateGroup={handleGroupUpdate} onUpdateUserProfile={handleUpdateUserProfile} />;
 }
