@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { sha256, BRAND, BRAND_LT, SILVER, GROUP_ICONS, GROUP_COLORS, VORSTAND_USER, LIST_ADM_HASH, fmt, isTrustedPaymentLink, normalizePaymentLink } from "../constants";
+import { useState, useMemo } from "react";
+import { sha256, BRAND, BRAND_LT, SILVER, GROUP_ICONS, GROUP_COLORS, VORSTAND_USER, LIST_ADM_HASH, fmt, parseAmount, isTrustedPaymentLink, normalizePaymentLink } from "../constants";
 import { computeBalances, computeTransactions, computePersonalSummary, getDebtGroups } from "../logic";
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
 import UserManagement from "./UserManagement";
@@ -48,7 +48,6 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
     setProfileDone(true);
   };
 
-  const [showPwChange] = useState(false); // unused, kept for safety
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
@@ -95,7 +94,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
   const confirmTilgen = async () => {
     if (!tilgenModal) return;
-    const amt = parseFloat(String(tilgenAmt).replace(",", "."));
+    const amt = parseAmount(tilgenAmt);
     if (isNaN(amt) || amt <= 0) return;
     setTilgenLoading(true);
     const { fromId, toId } = tilgenModal;
@@ -121,12 +120,18 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const canCreate = newName.trim() && newAdminPw.trim() && newMembers.length >= 2;
   const visibleGroups = currentUser.isVorstand ? groups : groups.filter(g => g.members.includes(currentUser.id));
 
-  const { owedToMe, iOwe } = computePersonalSummary(visibleGroups, currentUser.id);
-  const owedToMeList = Object.entries(owedToMe).filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]);
-  const iOweList = Object.entries(iOwe).filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]);
-  const totalOwedToMe = owedToMeList.reduce((s, [, v]) => s + v, 0);
-  const totalIOwe = iOweList.reduce((s, [, v]) => s + v, 0);
-  const hasPersonalData = owedToMeList.length > 0 || iOweList.length > 0;
+  const { owedToMeList, iOweList, totalOwedToMe, totalIOwe, hasPersonalData } = useMemo(() => {
+    const { owedToMe, iOwe } = computePersonalSummary(visibleGroups, currentUser.id);
+    const owedToMeList = Object.entries(owedToMe).filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]);
+    const iOweList = Object.entries(iOwe).filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]);
+    return {
+      owedToMeList,
+      iOweList,
+      totalOwedToMe: owedToMeList.reduce((s, [, v]) => s + v, 0),
+      totalIOwe: iOweList.reduce((s, [, v]) => s + v, 0),
+      hasPersonalData: owedToMeList.length > 0 || iOweList.length > 0,
+    };
+  }, [visibleGroups, currentUser.id]);
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
@@ -250,12 +255,10 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
             <p style={{ fontSize: 12, margin: "2px 0 0", color: SILVER }}>Dawson Schach und Spiele Club</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {currentUser.isVorstand && (
-              <button onClick={() => setShowUserMgmt(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Nutzer</button>
-            )}
-            {!currentUser.isVorstand && (
-              <button onClick={openProfile} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Profil</button>
-            )}
+            {currentUser.isVorstand
+              ? <button onClick={() => setShowUserMgmt(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Nutzer</button>
+              : <button onClick={openProfile} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "6px 12px", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Profil</button>
+            }
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: "var(--radius-full)", padding: "5px 12px 5px 5px", cursor: "pointer" }} onClick={onLogout}>
               <Avatar name={currentUser.name} size={26} />
               <span style={{ fontSize: 13, color: "#fff", fontWeight: 500 }}>{currentUser.name}</span>

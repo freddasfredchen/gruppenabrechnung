@@ -52,3 +52,4 @@ export async function sha256(str) {
 export function initials(name) { return name.trim().split(" ").map(w=>w[0]?.toUpperCase()||"").join("").slice(0,2)||"?"; }
 export function fmt(n) { return n.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"; }
 export function avatarColor(name) { return COLORS_AVATAR[name.charCodeAt(0)%COLORS_AVATAR.length]; }
+export function parseAmount(v) { return parseFloat(String(v).replace(",", ".")); }

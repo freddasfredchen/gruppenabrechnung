@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { sha256, BRAND, BRAND_LT, fmt, CATEGORIES } from "../constants";
+import { sha256, BRAND, BRAND_LT, fmt, CATEGORIES, parseAmount } from "../constants";
 import { computeBalances, computeTransactions } from "../logic";
 import { Avatar, ToggleBtn, PrimaryBtn, Inp, SectionLabel, Card, ModalWrap } from "../ui";
 import ManualPayment from "./ManualPayment";
@@ -156,6 +156,65 @@ function getRecurringOccurrences(r) {
   return results;
 }
 
+function computeSplitShares(mode, participants, members, amount) {
+  const parts = participants.length > 0 ? participants : members;
+  const amt = parseAmount(amount) || 0;
+  const shares = {};
+  if (mode === "proportional") {
+    const pct = parseFloat((100 / parts.length).toFixed(1));
+    parts.forEach(uid => { shares[uid] = pct; });
+  } else if (mode === "exact") {
+    const share = amt > 0 ? parseFloat((amt / parts.length).toFixed(2)) : "";
+    parts.forEach(uid => { shares[uid] = share; });
+  }
+  return shares;
+}
+
+function buildShares(form) {
+  return form.splitMode !== "equal"
+    ? Object.fromEntries(Object.entries(form.shares).map(([k, v]) => [k, parseFloat(v) || 0]).filter(([, v]) => v > 0))
+    : {};
+}
+
+function validateSplitForm(form, members) {
+  const amt = parseAmount(form.amount);
+  if (!form.desc.trim() || isNaN(amt) || amt <= 0 || !form.payer) return false;
+  const parts = form.participants.length > 0 ? form.participants : members;
+  if (form.splitMode === "proportional") {
+    const total = parts.reduce((s, uid) => s + (parseFloat(form.shares[uid]) || 0), 0);
+    if (Math.abs(total - 100) > 0.5) return false;
+  }
+  if (form.splitMode === "exact") {
+    const total = parts.reduce((s, uid) => s + (parseFloat(form.shares[uid]) || 0), 0);
+    if (Math.abs(total - amt) > 0.01) return false;
+  }
+  return true;
+}
+
+function SplitModeButtons({ splitMode, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+      {SPLIT_MODES.map(m => (
+        <button key={m.id} onClick={() => onChange(m.id)} style={{ padding: "6px 14px", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: splitMode === m.id ? 700 : 500, cursor: "pointer", border: splitMode === m.id ? `2px solid ${BRAND}` : "1px solid var(--color-border-secondary)", background: splitMode === m.id ? "var(--brand-a10)" : "transparent", color: splitMode === m.id ? BRAND : "var(--color-text-secondary)", transition: "all 0.15s" }}>
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CategoryPicker({ category, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      {CATEGORIES.map(c => (
+        <button key={c.id} onClick={() => onChange(c.id)} style={{ padding: "5px 11px", borderRadius: "var(--radius-full)", fontSize: 12, fontWeight: 600, cursor: "pointer", border: category === c.id ? `2px solid ${c.color}` : "1.5px solid var(--color-border-secondary)", background: category === c.id ? c.color + "22" : "transparent", color: category === c.id ? c.color : "var(--color-text-secondary)", transition: "all 0.15s" }}>
+          {c.icon} {c.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function GroupDetail({ group, allUsers, onUpdate, onBack, currentUser }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -188,43 +247,19 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
     () => (g.recurringExpenses || []).filter(r => r.active && getRecurringOccurrences(r).length > 0),
     [g.recurringExpenses]
   );
+  const pendingSet = useMemo(() => new Set(pendingRecurring.map(r => r.id)), [pendingRecurring]);
 
-  const handleRecSplitModeChange = mode => {
-    const parts = recForm.participants.length > 0 ? recForm.participants : g.members;
-    const amt = parseFloat(String(recForm.amount).replace(",", ".")) || 0;
-    let shares = {};
-    if (mode === "proportional") {
-      const pct = parseFloat((100 / parts.length).toFixed(1));
-      parts.forEach(uid => { shares[uid] = pct; });
-    } else if (mode === "exact") {
-      const share = amt > 0 ? parseFloat((amt / parts.length).toFixed(2)) : "";
-      parts.forEach(uid => { shares[uid] = share; });
-    }
-    setRecForm(f => ({ ...f, splitMode: mode, shares }));
-  };
+  const handleRecSplitModeChange = mode => setRecForm(f => ({ ...f, splitMode: mode, shares: computeSplitShares(mode, f.participants, g.members, f.amount) }));
 
   const canSaveRec = () => {
-    const amt = parseFloat(String(recForm.amount).replace(",", "."));
-    if (!recForm.desc.trim() || isNaN(amt) || amt <= 0 || !recForm.payer) return false;
     if (parseInt(recForm.dayOfMonth) < 1 || parseInt(recForm.dayOfMonth) > 28) return false;
-    const parts = recForm.participants.length > 0 ? recForm.participants : g.members;
-    if (recForm.splitMode === "proportional") {
-      const total = parts.reduce((s, uid) => s + (parseFloat(recForm.shares[uid]) || 0), 0);
-      if (Math.abs(total - 100) > 0.5) return false;
-    }
-    if (recForm.splitMode === "exact") {
-      const total = parts.reduce((s, uid) => s + (parseFloat(recForm.shares[uid]) || 0), 0);
-      if (Math.abs(total - amt) > 0.01) return false;
-    }
-    return true;
+    return validateSplitForm(recForm, g.members);
   };
 
   const addRecurring = () => {
     if (!canSaveRec()) return;
-    const amt = parseFloat(String(recForm.amount).replace(",", "."));
-    const shares = recForm.splitMode !== "equal"
-      ? Object.fromEntries(Object.entries(recForm.shares).map(([k, v]) => [k, parseFloat(v) || 0]).filter(([, v]) => v > 0))
-      : {};
+    const amt = parseAmount(recForm.amount);
+    const shares = buildShares(recForm);
     save(ng => {
       ng.recurringExpenses.push({
         id: Date.now() + "",
@@ -280,41 +315,14 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
     setAdminLoading(false);
   };
 
-  const handleSplitModeChange = mode => {
-    const parts = expForm.participants.length > 0 ? expForm.participants : g.members;
-    const amt = parseFloat(String(expForm.amount).replace(",", ".")) || 0;
-    let shares = {};
-    if (mode === "proportional") {
-      const pct = parseFloat((100 / parts.length).toFixed(1));
-      parts.forEach(uid => { shares[uid] = pct; });
-    } else if (mode === "exact") {
-      const share = amt > 0 ? parseFloat((amt / parts.length).toFixed(2)) : "";
-      parts.forEach(uid => { shares[uid] = share; });
-    }
-    setExpForm(f => ({ ...f, splitMode: mode, shares }));
-  };
+  const handleSplitModeChange = mode => setExpForm(f => ({ ...f, splitMode: mode, shares: computeSplitShares(mode, f.participants, g.members, f.amount) }));
 
-  const canSaveExp = () => {
-    const amt = parseFloat(String(expForm.amount).replace(",", "."));
-    if (!expForm.desc.trim() || isNaN(amt) || amt <= 0 || !expForm.payer) return false;
-    const parts = expForm.participants.length > 0 ? expForm.participants : g.members;
-    if (expForm.splitMode === "proportional") {
-      const total = parts.reduce((s, uid) => s + (parseFloat(expForm.shares[uid]) || 0), 0);
-      if (Math.abs(total - 100) > 0.5) return false;
-    }
-    if (expForm.splitMode === "exact") {
-      const total = parts.reduce((s, uid) => s + (parseFloat(expForm.shares[uid]) || 0), 0);
-      if (Math.abs(total - amt) > 0.01) return false;
-    }
-    return true;
-  };
+  const canSaveExp = () => validateSplitForm(expForm, g.members);
 
   const addExpense = () => {
     if (!canSaveExp()) return;
-    const amt = parseFloat(String(expForm.amount).replace(",", "."));
-    const shares = expForm.splitMode !== "equal"
-      ? Object.fromEntries(Object.entries(expForm.shares).map(([k, v]) => [k, parseFloat(v) || 0]).filter(([, v]) => v > 0))
-      : {};
+    const amt = parseAmount(expForm.amount);
+    const shares = buildShares(expForm);
     save(ng => { ng.expenses = [...ng.expenses, { id: Date.now() + "", desc: expForm.desc.trim(), amount: amt, payer: expForm.payer, participants: expForm.splitMode === "equal" ? expForm.participants : [], category: expForm.category, splitMode: expForm.splitMode, shares, date: new Date().toLocaleDateString("de-DE") }]; });
     setExpForm(emptyForm); setShowExpForm(false);
   };
@@ -439,7 +447,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
             ? <button onClick={() => setShowAdminModal(true)} style={{ padding: "7px 14px", borderRadius: "var(--radius-full)", background: "transparent", color: "var(--color-text-secondary)", border: "1px solid var(--color-border-secondary)", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>Administration</button>
             : <>
                 <NavBtn k="passwörter" label="Passwörter" />
-                <button onClick={() => { setIsAdmin(false); if (view === "passwörter") setView("salden"); resetPwForm(setGpw); resetPwForm(setApw); }} style={{ padding: "7px 14px", borderRadius: "var(--radius-full)", background: BRAND_LT, color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>Admin aktiv ×</button>
+                <button onClick={() => { setIsAdmin(false); if (view === "passwörter") setView("salden"); resetPwForm(setApw); }} style={{ padding: "7px 14px", borderRadius: "var(--radius-full)", background: BRAND_LT, color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>Admin aktiv ×</button>
               </>
           }
         </div>
@@ -496,13 +504,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
                   <div>
                     <SectionLabel>Kategorie</SectionLabel>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {CATEGORIES.map(c => (
-                        <button key={c.id} onClick={() => setExpForm(f => ({ ...f, category: c.id }))} style={{ padding: "5px 11px", borderRadius: "var(--radius-full)", fontSize: 12, fontWeight: 600, cursor: "pointer", border: expForm.category === c.id ? `2px solid ${c.color}` : "1.5px solid var(--color-border-secondary)", background: expForm.category === c.id ? c.color + "22" : "transparent", color: expForm.category === c.id ? c.color : "var(--color-text-secondary)", transition: "all 0.15s" }}>
-                          {c.icon} {c.label}
-                        </button>
-                      ))}
-                    </div>
+                    <CategoryPicker category={expForm.category} onChange={id => setExpForm(f => ({ ...f, category: id }))} />
                   </div>
 
                   <div>
@@ -514,13 +516,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
                   <div>
                     <SectionLabel>Aufteilung</SectionLabel>
-                    <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-                      {SPLIT_MODES.map(m => (
-                        <button key={m.id} onClick={() => handleSplitModeChange(m.id)} style={{ padding: "6px 14px", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: expForm.splitMode === m.id ? 700 : 500, cursor: "pointer", border: expForm.splitMode === m.id ? `2px solid ${BRAND}` : "1px solid var(--color-border-secondary)", background: expForm.splitMode === m.id ? "var(--brand-a10)" : "transparent", color: expForm.splitMode === m.id ? BRAND : "var(--color-text-secondary)", transition: "all 0.15s" }}>
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
+                    <SplitModeButtons splitMode={expForm.splitMode} onChange={handleSplitModeChange} />
                     {expForm.splitMode === "equal" && (
                       <div>
                         <SectionLabel style={{ margin: "0 0 8px" }}>Aufgeteilt unter <span style={{ textTransform: "none", fontWeight: 400, letterSpacing: 0, opacity: 0.6 }}>(leer = alle)</span></SectionLabel>
@@ -628,13 +624,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
                   <div>
                     <SectionLabel>Kategorie</SectionLabel>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {CATEGORIES.map(c => (
-                        <button key={c.id} onClick={() => setRecForm(f => ({ ...f, category: c.id }))} style={{ padding: "5px 11px", borderRadius: "var(--radius-full)", fontSize: 12, fontWeight: 600, cursor: "pointer", border: recForm.category === c.id ? `2px solid ${c.color}` : "1.5px solid var(--color-border-secondary)", background: recForm.category === c.id ? c.color + "22" : "transparent", color: recForm.category === c.id ? c.color : "var(--color-text-secondary)", transition: "all 0.15s" }}>
-                          {c.icon} {c.label}
-                        </button>
-                      ))}
-                    </div>
+                    <CategoryPicker category={recForm.category} onChange={id => setRecForm(f => ({ ...f, category: id }))} />
                   </div>
 
                   <div>
@@ -646,13 +636,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
                   <div>
                     <SectionLabel>Aufteilung</SectionLabel>
-                    <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-                      {SPLIT_MODES.map(m => (
-                        <button key={m.id} onClick={() => handleRecSplitModeChange(m.id)} style={{ padding: "6px 14px", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: recForm.splitMode === m.id ? 700 : 500, cursor: "pointer", border: recForm.splitMode === m.id ? `2px solid ${BRAND}` : "1px solid var(--color-border-secondary)", background: recForm.splitMode === m.id ? "var(--brand-a10)" : "transparent", color: recForm.splitMode === m.id ? BRAND : "var(--color-text-secondary)", transition: "all 0.15s" }}>
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
+                    <SplitModeButtons splitMode={recForm.splitMode} onChange={handleRecSplitModeChange} />
                     {recForm.splitMode === "equal" && (
                       <div>
                         <SectionLabel style={{ margin: "0 0 8px" }}>Aufgeteilt unter <span style={{ textTransform: "none", fontWeight: 400, letterSpacing: 0, opacity: 0.6 }}>(leer = alle)</span></SectionLabel>
@@ -681,7 +665,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
 
             <div style={{ display: "grid", gap: 8 }}>
               {(g.recurringExpenses || []).map(r => {
-                const pending = getRecurringOccurrences(r).length > 0;
+                const pending = pendingSet.has(r.id);
                 return (
                   <div key={r.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "13px 14px", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)", borderLeft: pending ? `3px solid ${BRAND}` : undefined }}>
                     <Avatar name={getName(r.payer)} />
