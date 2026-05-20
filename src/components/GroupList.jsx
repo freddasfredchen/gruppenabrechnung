@@ -8,7 +8,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const allUsers = [VORSTAND_USER, ...users];
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
 
-  const [mainView, setMainView] = useState("gruppen");
+  const [mainView, setMainView] = useState("bilanz");
   const [tilgenModal, setTilgenModal] = useState(null); // { fromId, toId, maxAmt }
   const [tilgenAmt, setTilgenAmt] = useState("");
   const [tilgenLoading, setTilgenLoading] = useState(false);
