@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { SK_SESSION, VORSTAND_USER } from "./constants";
-import { computeCrossGroupNetting } from "./logic";
+import { computeCrossGroupNetting, computeTransactions, computeBalances } from "./logic";
 import UserLoginScreen from "./components/UserLoginScreen";
 import GroupList from "./components/GroupList";
 import GroupDetail from "./components/GroupDetail";
@@ -58,6 +58,13 @@ export default function App() {
   if (!currentUser) return <UserLoginScreen users={users} onLogin={login} />;
 
   const handleGroupUpdate = async (updatedGroup) => {
+    if (updatedGroup.type === "direct") {
+      const txs = computeTransactions(computeBalances(updatedGroup.members, updatedGroup.expenses, updatedGroup.payments));
+      if (txs.length === 0) {
+        await deleteDoc(doc(db, "groups", updatedGroup.id));
+        return;
+      }
+    }
     await setDoc(doc(db, "groups", updatedGroup.id), updatedGroup);
     const allGroups = groups.map(g => g.id === updatedGroup.id ? updatedGroup : g);
     for (const ng of computeCrossGroupNetting(allGroups)) {

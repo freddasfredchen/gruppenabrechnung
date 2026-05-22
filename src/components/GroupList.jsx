@@ -9,6 +9,31 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   const getName = uid => allUsers.find(u => u.id === uid)?.name || "?";
 
   const [mainView, setMainView] = useState("bilanz");
+  const [showDirect, setShowDirect] = useState(false);
+  const [directForm, setDirectForm] = useState({ desc: "", amount: "", payer: "", recipient: "" });
+
+  const createDirect = () => {
+    const amt = parseAmount(directForm.amount);
+    if (!directForm.desc.trim() || isNaN(amt) || amt <= 0 || !directForm.payer || !directForm.recipient) return;
+    const id = `direct-${Date.now()}`;
+    onCreateGroup({
+      id,
+      name: `${getName(directForm.payer)} → ${getName(directForm.recipient)}`,
+      hidden: true,
+      type: "direct",
+      members: [directForm.payer, directForm.recipient],
+      expenses: [{ id: `${id}-exp`, desc: directForm.desc.trim(), amount: amt, payer: directForm.payer, participants: [directForm.payer, directForm.recipient], category: "other", splitMode: "equal", shares: {}, date: new Date().toLocaleDateString("de-DE") }],
+      payments: [],
+      recurringExpenses: [],
+      adminHash: "",
+      color: BRAND,
+      icon: "💸",
+      creatorId: currentUser.id,
+    });
+    setDirectForm({ desc: "", amount: "", payer: "", recipient: "" });
+    setShowDirect(false);
+  };
+
   const [tilgenModal, setTilgenModal] = useState(null); // { fromId, toId, maxAmt }
   const [tilgenAmt, setTilgenAmt] = useState("");
   const [tilgenNote, setTilgenNote] = useState("");
@@ -100,7 +125,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
     if (isNaN(amt) || amt <= 0) return;
     setTilgenLoading(true);
     const { fromId, toId } = tilgenModal;
-    const debtGroups = getDebtGroups(visibleGroups, fromId, toId);
+    const debtGroups = getDebtGroups(memberGroups, fromId, toId);
     let remaining = amt;
     for (const { group, amt: groupAmt } of debtGroups) {
       if (remaining <= 0.005) break;
@@ -120,10 +145,11 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
   };
 
   const canCreate = newName.trim() && newAdminPw.trim() && newMembers.length >= 2;
-  const visibleGroups = currentUser.isVorstand ? groups : groups.filter(g => g.members.includes(currentUser.id));
+  const memberGroups = currentUser.isVorstand ? groups : groups.filter(g => g.members.includes(currentUser.id));
+  const visibleGroups = memberGroups.filter(g => !g.hidden);
 
   const { owedToMeList, iOweList, totalOwedToMe, totalIOwe, hasPersonalData } = useMemo(() => {
-    const { owedToMe, iOwe } = computePersonalSummary(visibleGroups, currentUser.id);
+    const { owedToMe, iOwe } = computePersonalSummary(memberGroups, currentUser.id);
     const owedToMeList = Object.entries(owedToMe).filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]);
     const iOweList = Object.entries(iOwe).filter(([, v]) => v > 0.005).sort((a, b) => b[1] - a[1]);
     return {
@@ -133,7 +159,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
       totalIOwe: iOweList.reduce((s, [, v]) => s + v, 0),
       hasPersonalData: owedToMeList.length > 0 || iOweList.length > 0,
     };
-  }, [visibleGroups, currentUser.id]);
+  }, [memberGroups, currentUser.id]);
 
   return (
     <div style={{ fontFamily: "var(--font-sans)", maxWidth: 640, margin: "0 auto" }}>
@@ -281,7 +307,33 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
         {mainView === "bilanz" && (
           <div style={{ animation: "fadeIn 0.2s ease" }}>
-            {!hasPersonalData && <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Keine offenen Beträge.</p>}
+            <div style={{ marginBottom: "1.25rem" }}>
+              <button onClick={() => { setShowDirect(v => !v); setDirectForm(f => ({ ...f, payer: currentUser.id, recipient: "" })); }} style={{ padding: "8px 18px", borderRadius: "var(--radius-sm)", border: `1.5px solid ${BRAND}`, background: showDirect ? "var(--brand-a10)" : "transparent", color: BRAND, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+                {showDirect ? "Abbrechen" : "+ Direktausgabe"}
+              </button>
+              {showDirect && (
+                <Card style={{ marginTop: "0.75rem" }}>
+                  <div style={{ display: "grid", gap: 12 }}>
+                    <Inp placeholder="Beschreibung (z.B. Mittagessen)" value={directForm.desc} onChange={e => setDirectForm(f => ({ ...f, desc: e.target.value }))} autoFocus />
+                    <Inp placeholder="Betrag (€)" type="number" value={directForm.amount} onChange={e => setDirectForm(f => ({ ...f, amount: e.target.value }))} />
+                    <div>
+                      <SectionLabel>Bezahlt von</SectionLabel>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {allUsers.filter(u => !u.isVorstand).map(u => <ToggleBtn key={u.id} active={directForm.payer === u.id} onClick={() => setDirectForm(f => ({ ...f, payer: u.id, recipient: f.recipient === u.id ? "" : f.recipient }))}>{u.name}</ToggleBtn>)}
+                      </div>
+                    </div>
+                    <div>
+                      <SectionLabel>Für wen</SectionLabel>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {allUsers.filter(u => !u.isVorstand && u.id !== directForm.payer).map(u => <ToggleBtn key={u.id} active={directForm.recipient === u.id} onClick={() => setDirectForm(f => ({ ...f, recipient: f.recipient === u.id ? "" : u.id }))}>{u.name}</ToggleBtn>)}
+                      </div>
+                    </div>
+                    <PrimaryBtn onClick={createDirect} disabled={!directForm.desc.trim() || !directForm.amount || !directForm.payer || !directForm.recipient} full>Ausgabe eintragen</PrimaryBtn>
+                  </div>
+                </Card>
+              )}
+            </div>
+            {!hasPersonalData && !showDirect && <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Keine offenen Beträge.</p>}
             <div style={{ display: "flex", gap: 10, marginBottom: hasPersonalData ? "1.25rem" : 0 }}>
               {totalOwedToMe > 0.005 && (
                 <div style={{ flex: 1, padding: "14px", borderRadius: "var(--radius)", background: "var(--color-background-primary)", boxShadow: "var(--shadow-sm)", textAlign: "center" }}>
