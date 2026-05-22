@@ -99,6 +99,13 @@ export function computePersonalSummary(groups, userId) {
     }
   }
 
+  for (const uid of new Set([...Object.keys(owedToMe), ...Object.keys(iOwe)])) {
+    const net = (owedToMe[uid] || 0) - (iOwe[uid] || 0);
+    if (net > 0.005) { owedToMe[uid] = net; delete iOwe[uid]; }
+    else if (net < -0.005) { iOwe[uid] = -net; delete owedToMe[uid]; }
+    else { delete owedToMe[uid]; delete iOwe[uid]; }
+  }
+
   return { owedToMe, iOwe };
 }
 
