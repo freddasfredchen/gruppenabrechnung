@@ -146,7 +146,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
 
   const canCreate = newName.trim() && newAdminPw.trim() && newMembers.length >= 2;
   const memberGroups = currentUser.isVorstand ? groups : groups.filter(g => g.members.includes(currentUser.id));
-  const visibleGroups = memberGroups.filter(g => !g.hidden);
+  const visibleGroups = isListAdmin ? memberGroups : memberGroups.filter(g => !g.hidden);
 
   const { owedToMeList, iOweList, totalOwedToMe, totalIOwe, hasPersonalData } = useMemo(() => {
     const { owedToMe, iOwe } = computePersonalSummary(memberGroups, currentUser.id);
@@ -398,7 +398,10 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: "var(--color-background-primary)", borderRadius: "var(--radius)", boxShadow: "var(--shadow-sm)", cursor: isListAdmin ? "default" : "pointer" }}>
                 <div style={{ width: 46, height: 46, borderRadius: "var(--radius-sm)", background: g.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, color: "#fff" }}>{g.icon}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: "var(--color-text-primary)" }}>{g.name}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: "var(--color-text-primary)" }}>{g.name}</p>
+                    {g.hidden && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: "var(--radius-full)", background: "var(--color-background-secondary)", color: "var(--color-text-secondary)", border: "1px solid var(--color-border-secondary)" }}>versteckt</span>}
+                  </div>
                   <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--color-text-secondary)" }}>{g.members.length} Mitglieder · {fmt(total)} Gesamt</p>
                 </div>
                 {openTxs > 0 && <span style={{ background: "var(--brand-a15)", color: BRAND, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: "var(--radius-full)", whiteSpace: "nowrap" }}>{openTxs} offen</span>}
