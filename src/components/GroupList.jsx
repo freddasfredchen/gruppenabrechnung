@@ -22,7 +22,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
       hidden: true,
       type: "direct",
       members: [directForm.payer, directForm.recipient],
-      expenses: [{ id: `${id}-exp`, desc: directForm.desc.trim(), amount: amt, payer: directForm.payer, participants: [directForm.payer, directForm.recipient], category: "other", splitMode: "equal", shares: {}, date: new Date().toLocaleDateString("de-DE") }],
+      expenses: [{ id: `${id}-exp`, desc: directForm.desc.trim(), amount: amt, payer: directForm.payer, participants: [directForm.recipient], category: "other", splitMode: "equal", shares: {}, date: new Date().toLocaleDateString("de-DE") }],
       payments: [],
       recurringExpenses: [],
       adminHash: "",
