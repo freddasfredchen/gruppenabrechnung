@@ -24,6 +24,24 @@ export default function App() {
     return () => { unsubG(); unsubU(); };
   }, []);
 
+  // Einmal beim Start: verrechne Direktgruppen und lösche ausgeglichene
+  useEffect(() => {
+    if (!loaded || groups.length === 0) return;
+    const snapshot = groups;
+    (async () => {
+      const nettingMap = Object.fromEntries(computeCrossGroupNetting(snapshot).map(g => [g.id, g]));
+      for (const g of snapshot.filter(g => g.type === "direct")) {
+        const effective = nettingMap[g.id] || g;
+        const txs = computeTransactions(computeBalances(effective.members, effective.expenses, effective.payments));
+        if (txs.length === 0) {
+          await deleteDoc(doc(db, "groups", g.id));
+        } else if (nettingMap[g.id]) {
+          await setDoc(doc(db, "groups", g.id), effective);
+        }
+      }
+    })();
+  }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const allUsers = [VORSTAND_USER, ...users];
 
   const handleDelete = async (groupId, userId) => {
@@ -68,7 +86,12 @@ export default function App() {
     await setDoc(doc(db, "groups", updatedGroup.id), updatedGroup);
     const allGroups = groups.map(g => g.id === updatedGroup.id ? updatedGroup : g);
     for (const ng of computeCrossGroupNetting(allGroups)) {
-      await setDoc(doc(db, "groups", ng.id), ng);
+      const txs = computeTransactions(computeBalances(ng.members, ng.expenses, ng.payments));
+      if (ng.type === "direct" && txs.length === 0) {
+        await deleteDoc(doc(db, "groups", ng.id));
+      } else {
+        await setDoc(doc(db, "groups", ng.id), ng);
+      }
     }
   };
 
