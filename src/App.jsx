@@ -49,7 +49,22 @@ export default function App() {
     if (userId) await deleteDoc(doc(db, "users", userId));
   };
   const handleCreate = async (group, user) => {
-    if (group) await setDoc(doc(db, "groups", group.id), group);
+    if (group) {
+      await setDoc(doc(db, "groups", group.id), group);
+      if (group.type === "direct") {
+        const allGroups = [...groups, group];
+        const nettingMap = Object.fromEntries(computeCrossGroupNetting(allGroups).map(g => [g.id, g]));
+        for (const g of allGroups.filter(g => g.type === "direct")) {
+          const effective = nettingMap[g.id] || g;
+          const txs = computeTransactions(computeBalances(effective.members, effective.expenses, effective.payments));
+          if (txs.length === 0) {
+            await deleteDoc(doc(db, "groups", g.id));
+          } else if (nettingMap[g.id]) {
+            await setDoc(doc(db, "groups", g.id), effective);
+          }
+        }
+      }
+    }
     if (user) await setDoc(doc(db, "users", user.id), user);
   };
 
