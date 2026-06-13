@@ -136,7 +136,7 @@ export default function GroupList({ groups, users, currentUser, onEnter, onCreat
         members: [...group.members],
         expenses: [...group.expenses],
         recurringExpenses: [...(group.recurringExpenses || [])],
-        payments: [...group.payments, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, from: fromId, to: toId, amount: payAmt, note: tilgenNote.trim() || undefined, date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }],
+        payments: [...group.payments, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, from: fromId, to: toId, amount: payAmt, ...(tilgenNote.trim() ? { note: tilgenNote.trim() } : {}), date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }],
       };
       await onUpdateGroup(updated);
     }

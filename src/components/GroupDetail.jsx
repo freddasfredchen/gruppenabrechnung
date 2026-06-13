@@ -329,7 +329,7 @@ export default function GroupDetail({ group, allUsers, onUpdate, onBack, current
   };
 
   const removeExpense = id => save(ng => { ng.expenses = ng.expenses.filter(e => e.id !== id); });
-  const recordPayment = (from, to, amount, note = "") => save(ng => { ng.payments = [...ng.payments, { id: Date.now() + "", from, to, amount, note: note || undefined, date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }]; });
+  const recordPayment = (from, to, amount, note = "") => save(ng => { ng.payments = [...ng.payments, { id: Date.now() + "", from, to, amount, ...(note ? { note } : {}), date: new Date().toLocaleDateString("de-DE"), recordedBy: currentUser.id }]; });
   const removePayment = id => save(ng => { ng.payments = ng.payments.filter(p => p.id !== id); });
   const togglePart = uid => setExpForm(f => ({ ...f, participants: f.participants.includes(uid) ? f.participants.filter(p => p !== uid) : [...f.participants, uid] }));
 
